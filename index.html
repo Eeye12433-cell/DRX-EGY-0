@@ -1,26 +1,142 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DRX EGYPT | Official Distributor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        drxred: '#e11d48',
+                        'bg-primary': 'var(--bg-primary)',
+                        'bg-secondary': 'var(--bg-secondary)',
+                        'bg-card': 'var(--bg-card)',
+                        'text-main': 'var(--text-main)',
+                        'text-muted': 'var(--text-muted)'
+                    },
+                    fontFamily: {
+                        oswald: ['Oswald', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    fontWeight: {
+                        thin: '300',
+                        normal: '400',
+                        medium: '500',
+                        semibold: '600',
+                        bold: '700',
+                        extrabold: '800',
+                        black: '900',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --p-red: #e11d48;
+            --transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-ui: rgba(15, 23, 42, 0.08);
+        }
+        .dark {
+            --bg-primary: #050505;
+            --bg-secondary: #0a0a0a;
+            --bg-card: #111111;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-ui: rgba(248, 250, 252, 0.06);
+        }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.4s ease, color 0.4s ease;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.01em;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Oswald', sans-serif;
+            text-transform: uppercase;
+        }
+        .mono-ui {
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.1em;
+        }
+        .glass-nav {
+            backdrop-filter: blur(24px);
+            background: rgba(var(--nav-bg), 0.8);
+            border-bottom: 1px solid var(--border-ui);
+        }
+        .dark .glass-nav { --nav-bg: 5, 5, 5; }
+        .light .glass-nav { --nav-bg: 255, 255, 255; }
+        
+        .btn-drx {
+            clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%);
+            transition: var(--transition);
+            font-weight: 800;
+        }
+        .btn-drx:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+        .card-ui {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-ui);
+            transition: var(--transition);
+        }
+        .card-ui:hover {
+            border-color: var(--p-red);
+            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e11d48; border-radius: 10px; }
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-  </head>
-
-  <body>
+        /* Typography capacity enhancements */
+        .text-tracking-ultra { letter-spacing: 0.5em; }
+        .text-tracking-mega { letter-spacing: 0.25em; }
+        
+        input, select, textarea {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-ui);
+            color: var(--text-main);
+            transition: var(--transition);
+        }
+        input:focus {
+            border-color: var(--p-red);
+            box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.1);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "gsap": "https://esm.sh/gsap@^3.14.2"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<script type="module" src="/index.tsx"></script>
+</body>
 </html>

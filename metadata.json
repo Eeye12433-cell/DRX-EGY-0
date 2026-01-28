@@ -1,0 +1,9 @@
+{
+  "name": "DRX EGYPT | German Products Performance Hub",
+  "description": "Premium pharmaceutical-grade supplement store featuring an AI-powered nutrition calculator, product verification system, and secure admin management.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
