@@ -56,8 +56,14 @@ const PerformanceCoach: React.FC<PerformanceCoachProps> = ({ isOpen, onClose, la
 
   const startSession = async () => {
     try {
+      const apiKey = import.meta.env.VITE_LOVABLE_API_KEY;
+      if (!apiKey) {
+        setTranscription(["Missing VITE_LOVABLE_API_KEY. Please configure it to enable the Performance Coach."]);
+        setIsActive(false);
+        return;
+      }
       setIsActive(true);
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey });
       
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       const inputContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
