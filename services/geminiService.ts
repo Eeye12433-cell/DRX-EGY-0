@@ -2,14 +2,29 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserProfile, AINutritionResult, Product, CartItem } from "../types";
 
-// Initialize the Google GenAI client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getGeminiClient = () => {
+  const apiKey = import.meta.env.VITE_LOVABLE_API_KEY;
+  if (!apiKey) {
+    return { client: null, error: "Missing VITE_LOVABLE_API_KEY. Please set it to enable Gemini features." };
+  }
+  return { client: new GoogleGenAI({ apiKey }), error: null };
+};
 
 /**
  * Performance Analysis Logic (تحليل الأداء)
  * Uses gemini-3-pro-preview for high-accuracy biological reasoning and math.
  */
 export const getNutritionAdvice = async (profile: UserProfile, lang: 'ar' | 'en' = 'en'): Promise<AINutritionResult> => {
+  const { client, error } = getGeminiClient();
+  if (!client) {
+    return {
+      tdee: 0,
+      macros: { protein: 0, carbs: 0, fats: 0 },
+      recommendations: [],
+      hydration: "",
+      explanation: error ?? "Gemini is unavailable."
+    };
+  }
   const prompt = `
     As a world-class sports nutritionist, perform a deep performance analysis (تحليل الأداء) for:
     Age: ${profile.age}, Gender: ${profile.gender}, Weight: ${profile.weight}kg, Height: ${profile.height}cm, 
@@ -23,7 +38,7 @@ export const getNutritionAdvice = async (profile: UserProfile, lang: 'ar' | 'en'
     Return the response in JSON format. Provide a detailed but concise explanation of the rationale in ${lang === 'ar' ? 'Arabic' : 'English'}.
   `;
 
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: prompt,
     config: {
@@ -63,6 +78,11 @@ export const getAIRecommendations = async (
   viewHistoryNames: string[], 
   purchaseHistoryNames: string[]
 ): Promise<string[]> => {
+  const { client, error } = getGeminiClient();
+  if (!client) {
+    console.warn(error);
+    return [];
+  }
   const cartInfo = cart.length > 0 
     ? cart.map(item => `${item.product.name_en} (${item.product.category})`).join(', ')
     : "Empty Cart";
@@ -85,7 +105,7 @@ export const getAIRecommendations = async (
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await client.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
@@ -108,6 +128,10 @@ export const getAIRecommendations = async (
  * Synthesizes a new product image from scratch.
  */
 export const generateProductImage = async (name: string, description: string, theme: string = 'dark industrial charcoal texture'): Promise<string> => {
+  const { client, error } = getGeminiClient();
+  if (!client) {
+    throw new Error(error ?? "Gemini is unavailable.");
+  }
   const prompt = `High-end professional product photography of a premium supplement container. 
   The product is named "${name}". 
   Technical specs: "${description}". 
@@ -115,7 +139,7 @@ export const generateProductImage = async (name: string, description: string, th
   Background: ${theme}. 
   Quality: 8k resolution, hyper-realistic, cinematic lighting.`;
   
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: { parts: [{ text: prompt }] },
     config: {
@@ -138,12 +162,16 @@ export const generateProductImage = async (name: string, description: string, th
  * Edits an existing product image using text prompts.
  */
 export const editProductImage = async (base64Image: string, editPrompt: string, theme?: string): Promise<string> => {
+  const { client, error } = getGeminiClient();
+  if (!client) {
+    throw new Error(error ?? "Gemini is unavailable.");
+  }
   const mimeType = base64Image.split(';')[0].split(':')[1];
   const data = base64Image.split(',')[1];
 
   const themeInstruction = theme ? ` Change the background environment to: ${theme}.` : '';
 
-  const response = await ai.models.generateContent({
+  const response = await client.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: {
       parts: [
@@ -166,7 +194,11 @@ export const editProductImage = async (base64Image: string, editPrompt: string, 
  * Maps Grounding for Order Tracking.
  */
 export const getNearbyLogisticsHubs = async (lat: number, lng: number) => {
-  const response = await ai.models.generateContent({
+  const { client, error } = getGeminiClient();
+  if (!client) {
+    throw new Error(error ?? "Gemini is unavailable.");
+  }
+  const response = await client.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: "Find official supplement distribution hubs, premium pharmacies, or logistics centers in Cairo and Alexandria, Egypt that would handle DRX supplements.",
     config: {
