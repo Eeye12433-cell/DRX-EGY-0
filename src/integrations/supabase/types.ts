@@ -14,7 +14,260 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string | null
+          product_name: string
+          product_price: number
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id?: string | null
+          product_name: string
+          product_price: number
+          quantity: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string | null
+          product_name?: string
+          product_price?: number
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          id: string
+          shipping_address: string | null
+          shipping_email: string | null
+          shipping_full_name: string
+          shipping_method: Database["public"]["Enums"]["shipping_method"]
+          shipping_phone: string
+          status: Database["public"]["Enums"]["order_status"]
+          total: number
+          tracking_number: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          shipping_address?: string | null
+          shipping_email?: string | null
+          shipping_full_name: string
+          shipping_method?: Database["public"]["Enums"]["shipping_method"]
+          shipping_phone: string
+          status?: Database["public"]["Enums"]["order_status"]
+          total: number
+          tracking_number: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          shipping_address?: string | null
+          shipping_email?: string | null
+          shipping_full_name?: string
+          shipping_method?: Database["public"]["Enums"]["shipping_method"]
+          shipping_phone?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          total?: number
+          tracking_number?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: Database["public"]["Enums"]["product_category"]
+          created_at: string
+          description_ar: string | null
+          description_en: string | null
+          featured: number | null
+          goals: string[] | null
+          id: string
+          image: string | null
+          in_stock: boolean
+          is_best_seller: boolean
+          is_new: boolean
+          name_ar: string
+          name_en: string
+          price: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
+          featured?: number | null
+          goals?: string[] | null
+          id?: string
+          image?: string | null
+          in_stock?: boolean
+          is_best_seller?: boolean
+          is_new?: boolean
+          name_ar: string
+          name_en: string
+          price: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          description_ar?: string | null
+          description_en?: string | null
+          featured?: number | null
+          goals?: string[] | null
+          id?: string
+          image?: string | null
+          in_stock?: boolean
+          is_best_seller?: boolean
+          is_new?: boolean
+          name_ar?: string
+          name_en?: string
+          price?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          activity_level: string | null
+          age: number | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          gender: string | null
+          goal: string | null
+          height: number | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          activity_level?: string | null
+          age?: number | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          gender?: string | null
+          goal?: string | null
+          height?: number | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          activity_level?: string | null
+          age?: number | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          gender?: string | null
+          goal?: string | null
+          height?: number | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          product_id: string
+          rating: number
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          product_id: string
+          rating: number
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          rating?: number
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verification_codes: {
+        Row: {
+          created_at: string
+          id: string
+          used: boolean
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          used?: boolean
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          used?: boolean
+          used_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +276,19 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      order_status:
+        | "Pending"
+        | "Confirmed"
+        | "Shipped"
+        | "Delivered"
+        | "Cancelled"
+      product_category:
+        | "Protein"
+        | "Performance"
+        | "Pre-Workout"
+        | "Recovery"
+        | "Health & Wellness"
+      shipping_method: "delivery" | "pickup"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +415,22 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_status: [
+        "Pending",
+        "Confirmed",
+        "Shipped",
+        "Delivered",
+        "Cancelled",
+      ],
+      product_category: [
+        "Protein",
+        "Performance",
+        "Pre-Workout",
+        "Recovery",
+        "Health & Wellness",
+      ],
+      shipping_method: ["delivery", "pickup"],
+    },
   },
 } as const
