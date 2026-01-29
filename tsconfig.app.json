@@ -25,12 +25,17 @@
     "skipLibCheck": true,
     "strict": false,
     "target": "ES2020",
-    "types": [
-      "vitest/globals"
-    ],
     "useDefineForClassFields": true
   },
   "include": [
-    "src"
+    "src",
+    "App.tsx",
+    "index.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "services/**/*.ts",
+    "services/**/*.tsx",
+    "views/**/*.ts",
+    "views/**/*.tsx"
   ]
 }
