@@ -1,105 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=Oswald:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ===============================
-   Base Font & Rendering
-================================ */
+/* =========================================================
+   THEME TOKENS (Default = Dark)
+   Works with: .dark / .light  AND  html.dark / html.light
+========================================================= */
+:root {
+  /* Brand */
+  --drx-red: #e11d48;
+
+  /* App backgrounds */
+  --bg-primary: #050505;
+  --bg-secondary: #0a0a0a;
+  --bg-card: #111111;
+
+  /* Text */
+  --text-primary: #f4f4f5;
+  --text-secondary: #d4d4d8;
+  --text-muted: #a1a1aa;
+
+  /* Borders */
+  --border-color: rgba(255, 255, 255, 0.12);
+
+  /* Shadcn-style tokens (optional helpers if you use them) */
+  --background: 0 0% 2%;
+  --foreground: 0 0% 96%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 96%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 96%;
+  --primary: 346 77% 49%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 346 77% 49%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 15%;
+  --input: 0 0% 15%;
+  --ring: 346 77% 49%;
+  --radius: 0.25rem;
+}
+
+/* LIGHT THEME */
+html.light,
+.light {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+
+  --text-primary: #18181b;
+  --text-secondary: #3f3f46;
+  --text-muted: #52525b;
+
+  --border-color: rgba(0, 0, 0, 0.10);
+
+  --background: 0 0% 98%;
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
+  --secondary: 0 0% 94%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 40%;
+  --border: 0 0% 88%;
+  --input: 0 0% 88%;
+}
+
+/* DARK THEME (explicit, optional) */
+html.dark,
+.dark {
+  /* intentionally same as :root */
+}
+
+/* =========================================================
+   BASE TYPOGRAPHY + RENDERING
+========================================================= */
 html {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  @apply transition-colors duration-300;
+  font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.35s ease, color 0.35s ease;
+  overflow-x: hidden;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
-/* ===============================
-   THEME VARIABLES
-================================ */
-:root {
-  --bg-primary: #0a0a0a;
-  --bg-card: #111111;
-  --text-main: #f4f4f5;
-  --text-muted: #9ca3af;
-  --border-ui: rgba(255, 255, 255, 0.08);
+/* headings */
+h1, h2, h3, h4, h5, h6,
+.font-oswald {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
-/* 🌞 LIGHT MODE */
-.light {
-  --bg-primary: #f8fafc;
-  --bg-card: #ffffff;
-  --text-main: #0f172a;
-  --text-muted: #475569;
-  --border-ui: rgba(15, 23, 42, 0.12);
+/* monospace */
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
-/* 🌚 DARK MODE */
-.dark {
-  --bg-primary: #0a0a0a;
-  --bg-card: #111111;
-  --text-main: #f4f4f5;
-  --text-muted: #9ca3af;
-  --border-ui: rgba(255, 255, 255, 0.08);
-}
-
-/* ===============================
-   GLOBAL TOKENS
-================================ */
+/* =========================================================
+   YOUR PROJECT UTILITY CLASSES (matches your existing usage)
+========================================================= */
 .bg-bg-primary { background-color: var(--bg-primary); }
 .bg-bg-card { background-color: var(--bg-card); }
 
-.text-text-main { color: var(--text-main); }
+.text-text-main { color: var(--text-primary); }   /* you use this in App.tsx */
 .text-muted { color: var(--text-muted); }
 
-.border-ui { border-color: var(--border-ui); }
+.border-ui { border-color: var(--border-color); }
 
-/* 🔥 IMPORTANT FIXES FOR LIGHT MODE */
-.light .text-white {
-  color: var(--text-main) !important;
-}
+/* =========================================================
+   THE BIG FIX: Light mode issues with Tailwind utility colors
+   - Many components use bg-black and text-white
+   - In light mode that makes the "frame" stay black and text vanish
+   We'll override ONLY in light mode, and more safely:
+========================================================= */
 
-.light .border-white\/5,
-.light .border-white\/10 {
-  border-color: var(--border-ui) !important;
-}
-
+/* Make "bg-black" behave like theme background in LIGHT */
+html.light .bg-black,
 .light .bg-black {
-  background-color: var(--bg-primary) !important;
+  background-color: var(--bg-secondary) !important;
 }
 
-/* ===============================
-   CARDS
-================================ */
-.card-ui {
-  background-color: var(--bg-card);
-  color: var(--text-main);
-  border: 1px solid var(--border-ui);
+/* Fix borders that are hardcoded like border-white/5, border-white/10 */
+html.light .border-white\/5,
+html.light .border-white\/10,
+html.light .border-white\/20,
+.light .border-white\/5,
+.light .border-white\/10,
+.light .border-white\/20 {
+  border-color: var(--border-color) !important;
 }
 
-/* ===============================
-   BUTTON
-================================ */
+/*
+  Fix text-white only when it's on light surfaces.
+  (We DO NOT globally change .text-white everywhere لأن في مناطق لازم تفضل أبيض
+   زي bg-drxred أو overlay داكن)
+*/
+html.light .bg-bg-card .text-white,
+html.light .bg-bg-primary .text-white,
+html.light .bg-white .text-white,
+.light .bg-bg-card .text-white,
+.light .bg-bg-primary .text-white,
+.light .bg-white .text-white {
+  color: var(--text-primary) !important;
+}
+
+/* Also improve common zinc colors in light mode for readability */
+html.light .text-zinc-500,
+html.light .text-zinc-600,
+html.light .text-zinc-700,
+.light .text-zinc-500,
+.light .text-zinc-600,
+.light .text-zinc-700 {
+  color: var(--text-muted) !important;
+}
+
+html.light .text-zinc-400,
+.light .text-zinc-400 {
+  color: var(--text-secondary) !important;
+}
+
+/* =========================================================
+   BUTTONS / LINKS / UI
+========================================================= */
 .btn-drx {
   transition: all 0.25s ease;
 }
 
-/* ===============================
-   SCROLLBAR
-================================ */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+/* Toggle Buttons (if you use them) */
+.toggle-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.6rem 0.875rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.3s;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(225, 29, 72, 0.6);
-  border-radius: 10px;
+.toggle-btn:hover {
+  border-color: var(--drx-red);
+  color: var(--drx-red);
 }
 
-/* ===============================
+/* Sidebar links (optional) */
+.nav-link-sidebar {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  transition: color 0.3s, padding 0.3s;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.75rem 0;
+  text-align: inherit;
+  display: block;
+  width: 100%;
+}
+.nav-link-sidebar:hover {
+  color: var(--drx-red);
+  padding-inline-start: 8px;
+}
+
+/* Cards helper */
+.card-ui {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--drx-red);
+}
+
+/* =========================================================
    SELECTION
-================================ */
+========================================================= */
 ::selection {
-  background: #e11d48;
+  background: var(--drx-red);
   color: #ffffff;
+}
+
+/* =========================================================
+   RESPONSIVE SMALL POLISH
+========================================================= */
+@media (max-width: 768px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
