@@ -34,7 +34,7 @@ const Home: React.FC<HomeProps> = ({ lang }) => {
             src={drxLogo}
             alt="DRX Egypt"
             className="w-full h-full object-cover"
-            style={{ objectPosition: 'center 25%' }}
+            style={{ objectPosition: 'center 35%' }}
             loading="eager"
             decoding="async"
           />
