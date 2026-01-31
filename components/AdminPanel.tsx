@@ -3,6 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { Product, Category, VerificationCode, Order, OrderStatus, StripeConfig } from '../types';
 import { GOALS } from '../constants';
 import { generateProductImage, editProductImage } from '../services/aiService';
+import { ImageGenerationSkeleton } from './ui/Skeleton';
+import { ErrorState } from './ui/ErrorState';
 
 interface AdminPanelProps {
   products: Product[];
@@ -33,8 +35,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'codes' | 'orders' | 'stripe'>('dashboard');
   
   // Product Form State
-  const [isFormOpen, setIsFormOpen] = useState(false);
+const [isFormOpen, setIsFormOpen] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [aiEditPrompt, setAiEditPrompt] = useState('');
   const [selectedTheme, setSelectedTheme] = useState(BG_THEMES[0].prompt);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -145,17 +148,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
-  const handleSynthesizeImage = async () => {
+const handleSynthesizeImage = async () => {
     if (!formData.name_en || !formData.description_en) {
-      alert("ERROR: Name (EN) and Technical Spec (EN) are required.");
+      setImageError("Name (EN) and Technical Spec (EN) are required.");
       return;
     }
     setIsGeneratingImage(true);
+    setImageError(null);
     try {
       const imageData = await generateProductImage(formData.name_en, formData.description_en, selectedTheme);
       setFormData(prev => ({ ...prev, image: imageData }));
-    } catch (err) {
-      alert("SYNTHESIS FAILURE.");
+    } catch (err: any) {
+      setImageError(err?.message || "Image synthesis failed. Please try again.");
     } finally {
       setIsGeneratingImage(false);
     }
@@ -163,15 +167,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   const handleAiEdit = async () => {
     if (!formData.image || !aiEditPrompt) {
-      alert("ERROR: Current image and edit prompt required.");
+      setImageError("Current image and edit prompt required.");
       return;
     }
     setIsGeneratingImage(true);
+    setImageError(null);
     try {
       const editedData = await editProductImage(formData.image, aiEditPrompt, selectedTheme);
       setFormData(prev => ({ ...prev, image: editedData }));
-    } catch (err) {
-      alert("AI EDIT FAILURE.");
+    } catch (err: any) {
+      setImageError(err?.message || "AI edit failed. Please try again.");
     } finally {
       setIsGeneratingImage(false);
     }
@@ -447,11 +452,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <div className="space-y-6">
                   <div className="flex justify-between items-end">
                     <span className="text-[10px] font-mono text-drxred uppercase font-black tracking-mega">Visual Asset Render</span>
-                    <button type="button" onClick={handleSynthesizeImage} disabled={isGeneratingImage} className="bg-black border border-drxred text-drxred px-6 py-2 text-[10px] font-mono uppercase font-black tracking-mega hover:bg-drxred hover:text-white transition-all disabled:opacity-50">{isGeneratingImage ? 'RENDERING...' : '[ AI SYNTHESIZE ]'}</button>
+<button type="button" onClick={handleSynthesizeImage} disabled={isGeneratingImage} className="bg-black border border-drxred text-drxred px-6 py-2 text-[10px] font-mono uppercase font-black tracking-mega hover:bg-drxred hover:text-white transition-all disabled:opacity-50">{isGeneratingImage ? 'RENDERING...' : '[ AI SYNTHESIZE ]'}</button>
                   </div>
+                  
+                  {/* Image Error Display */}
+                  {imageError && !isGeneratingImage && (
+                    <ErrorState 
+                      title="Image Generation Failed"
+                      message={imageError}
+                      onRetry={() => setImageError(null)}
+                      variant="inline"
+                    />
+                  )}
+                  
                   <div className="aspect-square w-full bg-black border border-ui flex items-center justify-center relative overflow-hidden group shadow-inner">
-                    {formData.image ? <img src={formData.image} className="w-full h-full object-contain" alt="Preview" /> : <div className="text-zinc-900 font-bold text-7xl font-oswald uppercase opacity-30 select-none">NO ASSET</div>}
-                    {isGeneratingImage && <div className="absolute inset-0 bg-black/80 flex items-center justify-center"><div className="w-12 h-12 border-2 border-drxred border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(225,29,72,0.5)]"></div></div>}
+                    {isGeneratingImage ? (
+                      <ImageGenerationSkeleton />
+                    ) : formData.image ? (
+                      <img src={formData.image} className="w-full h-full object-contain" alt="Preview" />
+                    ) : (
+                      <div className="text-zinc-900 font-bold text-7xl font-oswald uppercase opacity-30 select-none">NO ASSET</div>
+                    )}
                   </div>
                   
                   <div className="p-6 bg-black/40 border border-ui space-y-6 rounded-sm">

@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { supabase } from "@/integrations/supabase/client";
+import { ChatMessageSkeleton } from './ui/Skeleton';
+import { ErrorState } from './ui/ErrorState';
 
 interface PerformanceCoachProps {
   isOpen: boolean;
@@ -110,17 +112,7 @@ const PerformanceCoach: React.FC<PerformanceCoachProps> = ({ isOpen, onClose, la
             </div>
           ))}
           
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-zinc-900 border border-white/10 p-4 rounded-xl">
-                <div className="flex gap-1.5">
-                  {[1,2,3].map(i => (
-                    <div key={i} className="w-2 h-2 bg-drxred rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }}></div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+{isLoading && <ChatMessageSkeleton />}
           
           <div ref={messagesEndRef} />
         </div>
