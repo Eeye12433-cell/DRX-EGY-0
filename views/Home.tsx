@@ -134,15 +134,15 @@ const Home: React.FC<HomeProps> = ({
         <div className="container relative z-10 px-6 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-12 h-full">
           {/* Left: Logo */}
           <div className="flex-shrink-0 lg:flex-1 flex justify-center lg:justify-start">
-            <img ref={logoRef} src={drxLogo} alt="DRX Logo" className="w-[300px] md:w-[450px] lg:w-[550px] h-auto object-contain drop-shadow-[0_0_40px_rgba(225,29,72,0.3)]" />
+            <img ref={logoRef} src={drxLogo} alt="DRX Logo" className="w-[300px] md:w-[450px] lg:w-[550px] h-auto object-contain drop-shadow-[0_0_40px_rgba(225,29,72,0.3)] shadow-md" />
           </div>
 
           {/* Right: Content */}
           <div className="flex-1 max-w-2xl">
             {/* Badge */}
             <div ref={badgeRef} className="mb-8 flex items-center gap-6">
-              <div className="w-16 h-0.5 bg-drxred"></div>
-              <span className="bg-drxred/10 text-drxred px-6 py-2.5 font-mono text-[11px] uppercase tracking-[0.4em] font-black border border-drxred/30">
+              
+              <span className="bg-drxred/10 text-drxred px-6 py-2.5 font-mono uppercase tracking-[0.4em] font-black border border-drxred/30 text-xl">
                 {lang === 'ar' ? 'الموزع الرسمي المعتمد' : 'Official Certified Hub'}
               </span>
             </div>
