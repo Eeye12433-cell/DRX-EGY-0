@@ -5,58 +5,36 @@
 @tailwind utilities;
 
 /* ===============================
-   Base Font & Rendering
-================================ */
-html {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-}
-
-body {
-  transition: background-color 0.35s ease, color 0.35s ease;
-  overflow-x: hidden;
-}
-
-/* ===============================
-   THEME TOKENS (Default: Dark)
-   IMPORTANT: theme class is on <html> (html.dark / html.light)
+   THEME TOKENS (DEFAULT = DARK)
+   NOTE: App.tsx adds class "dark" or "light" to <html>
 ================================ */
 :root {
-  --drx-red: #e11d48;
+  /* Brand */
+  --drxred: #e11d48;
 
+  /* Surfaces */
   --bg-primary: #050505;
   --bg-secondary: #0a0a0a;
   --bg-card: #111111;
 
+  /* Text */
   --text-primary: #f4f4f5;
   --text-secondary: #d4d4d8;
   --text-muted: #a1a1aa;
 
+  /* Borders */
   --border-color: rgba(255, 255, 255, 0.12);
 
-  /* If you use shadcn tokens anywhere */
+  /* Overlays (for bg-black/xx usage) */
+  --overlay-40: rgba(0, 0, 0, 0.40);
+  --overlay-60: rgba(0, 0, 0, 0.60);
+  --overlay-90: rgba(0, 0, 0, 0.90);
+
+  /* Optional Tailwind-ish tokens (if you ever use bg-background, text-foreground) */
   --background: 0 0% 2%;
   --foreground: 0 0% 96%;
-
   --card: 0 0% 7%;
   --card-foreground: 0 0% 96%;
-
-  --popover: 0 0% 7%;
-  --popover-foreground: 0 0% 96%;
-
-  --primary: 346 77% 49%;
-  --primary-foreground: 0 0% 100%;
-
-  --secondary: 0 0% 12%;
-  --secondary-foreground: 0 0% 96%;
-
-  --muted: 0 0% 12%;
-  --muted-foreground: 0 0% 60%;
-
-  --accent: 346 77% 49%;
-  --accent-foreground: 0 0% 100%;
-
   --border: 0 0% 15%;
   --input: 0 0% 15%;
   --ring: 346 77% 49%;
@@ -65,7 +43,7 @@ body {
 }
 
 /* ===============================
-   LIGHT THEME
+   LIGHT THEME OVERRIDES
 ================================ */
 html.light {
   --bg-primary: #f5f5f7;
@@ -78,125 +56,121 @@ html.light {
 
   --border-color: rgba(0, 0, 0, 0.10);
 
+  /* Overlays in light should be subtle, not "pure black" */
+  --overlay-40: rgba(15, 23, 42, 0.08);
+  --overlay-60: rgba(15, 23, 42, 0.12);
+  --overlay-90: rgba(15, 23, 42, 0.18);
+
   --background: 0 0% 98%;
   --foreground: 0 0% 9%;
-
   --card: 0 0% 100%;
   --card-foreground: 0 0% 9%;
-
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 9%;
-
-  --secondary: 0 0% 94%;
-  --secondary-foreground: 0 0% 9%;
-
-  --muted: 0 0% 94%;
-  --muted-foreground: 0 0% 40%;
-
   --border: 0 0% 88%;
   --input: 0 0% 88%;
 }
 
 /* ===============================
-   Apply base colors
+   BASE / TYPOGRAPHY
 ================================ */
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 16px;
-  line-height: 1.6;
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Headings fonts */
-h1, h2, h3, h4, h5, h6,
-.font-oswald {
+/* Arabic default font (clearer), English switches automatically */
+body {
+  font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.35s ease, color 0.35s ease;
+  overflow-x: hidden;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+/* If page is English, prefer Inter-like system; keep Cairo for Arabic */
+html[lang="en"] body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
-.font-mono {
-  font-family: 'JetBrains Mono', monospace;
+.font-oswald { font-family: 'Oswald', sans-serif; }
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+.font-inter { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+/* ===============================
+   GLOBAL UTILS (USED IN YOUR JSX)
+================================ */
+.bg-bg-primary { background-color: var(--bg-primary); }
+.bg-bg-card { background-color: var(--bg-card); }
+.text-text-main { color: var(--text-primary); }
+.text-muted { color: var(--text-muted); }
+.border-ui { border-color: var(--border-color); }
+
+.card-ui {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 /* ===============================
-   Utility tokens used in your app
+   🔥 FIX: LIGHT MODE "text-white" DISAPPEARS
+   Many components use text-white heavily.
+   In light mode, force those to readable primary text.
 ================================ */
-.bg-bg-primary { background-color: var(--bg-primary) !important; }
-.bg-bg-card { background-color: var(--bg-card) !important; }
-.text-text-main { color: var(--text-primary) !important; }
-.text-muted { color: var(--text-muted) !important; }
-.border-ui { border-color: var(--border-color) !important; }
-
-/* ===============================
-   🔥 CRITICAL FIXES (Light mode issues)
-   You have many "bg-black" and "text-white" hard-coded classes.
-   In light mode, they make text disappear and blocks stay black.
-================================ */
-
-/* 1) Any text-white becomes theme text in light */
 html.light .text-white {
   color: var(--text-primary) !important;
 }
 
-/* 2) Common zinc grays look too faint on light; bump them a bit */
+/* Muted zinc in light sometimes becomes too faint */
 html.light .text-zinc-400,
 html.light .text-zinc-500,
 html.light .text-zinc-600,
 html.light .text-zinc-700 {
-  color: var(--text-secondary) !important;
+  color: var(--text-muted) !important;
 }
 
-/* 3) Replace bg-black sections to theme backgrounds in light */
-html.light .bg-black { background-color: var(--bg-secondary) !important; }
-html.light .bg-black\/40 { background-color: rgba(0,0,0,0.04) !important; }
-html.light .bg-black\/60 { background-color: rgba(0,0,0,0.06) !important; }
-html.light .bg-black\/90 { background-color: rgba(0,0,0,0.10) !important; }
+/* ===============================
+   🔥 FIX: LIGHT MODE BLACK FRAMES / OVERLAYS
+   Components use bg-black, bg-black/40, bg-black/60, bg-black/90.
+   Replace with theme-aware overlays.
+================================ */
+html.light .bg-black {
+  background-color: var(--bg-secondary) !important;
+}
 
-/* 4) Replace white borders used in dark UI */
+/* Tailwind classnames with slash need escaping */
+html.light .bg-black\/40 { background-color: var(--overlay-40) !important; }
+html.light .bg-black\/60 { background-color: var(--overlay-60) !important; }
+html.light .bg-black\/90 { background-color: var(--overlay-90) !important; }
+
+/* Also borders like border-white/5 etc become too harsh/odd in light */
 html.light .border-white\/5,
 html.light .border-white\/10,
-html.light .border-white\/20 {
+html.light .border-white\/20,
+html.light .border-white\/30 {
   border-color: var(--border-color) !important;
 }
 
-/* 5) Buttons & highlights that must remain white/black can opt out */
-.keep-white { color: #fff !important; }
-.keep-black { color: #000 !important; }
-.keep-bg-black { background-color: #000 !important; }
-.keep-bg-white { background-color: #fff !important; }
+/* If you use ring/outline based on white */
+html.light .ring-white\/10,
+html.light .ring-white\/20 {
+  --tw-ring-color: var(--border-color) !important;
+}
 
 /* ===============================
-   Buttons / UI
+   BUTTON / COMPONENT HELPERS
 ================================ */
 .btn-drx {
-  position: relative;
-  overflow: hidden;
-  padding: 0.875rem 2rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  background-color: var(--drx-red);
-  color: #fff !important;
-  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
-  border: none;
-  cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
+  transition: all 0.25s ease;
 }
 
-.btn-drx:hover {
-  filter: brightness(1.08);
-  transform: scale(1.02);
-}
-
-.btn-drx:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Toggle Buttons (used in navbar/admin) */
+/* Toggle Buttons (if you use them) */
 .toggle-btn {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -209,13 +183,12 @@ html.light .border-white\/20 {
   font-weight: 600;
   transition: all 0.25s ease;
 }
-
 .toggle-btn:hover {
-  border-color: var(--drx-red);
-  color: var(--drx-red);
+  border-color: var(--drxred);
+  color: var(--drxred);
 }
 
-/* Sidebar Navigation Links */
+/* Sidebar Navigation Links (if present) */
 .nav-link-sidebar {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
@@ -232,47 +205,33 @@ html.light .border-white\/20 {
   display: block;
   width: 100%;
 }
-
 .nav-link-sidebar:hover {
-  color: var(--drx-red);
+  color: var(--drxred);
   padding-inline-start: 8px;
 }
 
 /* ===============================
-   Cards / Product visuals
+   SCROLLBAR
 ================================ */
-.card-ui {
-  background-color: var(--bg-card);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
-
-/* ===============================
-   Scrollbar
-================================ */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-secondary); }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--drx-red); }
-
-.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(225, 29, 72, 0.6);
+  background: rgba(225, 29, 72, 0.55);
   border-radius: 10px;
 }
-
-/* ===============================
-   Selection
-================================ */
-::selection {
-  background: var(--drx-red);
-  color: #ffffff;
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(225, 29, 72, 0.85);
 }
 
 /* ===============================
-   Responsive helpers
+   SELECTION
 ================================ */
-@media (max-width: 768px) {
-  .hero-content-box { padding: 2rem; }
-  .filter-bar { flex-direction: column; align-items: flex-start; }
+::selection {
+  background: var(--drxred);
+  color: #ffffff;
 }

@@ -12,7 +12,7 @@ const Home: React.FC<HomeProps> = ({ lang }) => {
 
   const copy = useMemo(() => {
     return {
-      badge: isRTL ? 'الموزّع الرسمي المعتمد لـ DRX Germany' : 'Official Certified Hub for DRX Germany',
+      badge: isRTL ? 'الموزّع الرسمي المعتمد' : 'Official Certified Hub',
       title1: isRTL ? 'أداء' : 'German',
       title2: isRTL ? 'ألماني' : 'Performance',
       title3: isRTL ? 'فائق' : 'Engineering',
@@ -51,7 +51,7 @@ const Home: React.FC<HomeProps> = ({ lang }) => {
           <div
             className="max-w-4xl p-8 md:p-12 border border-white/10 shadow-2xl"
             style={{
-              background: 'rgba(225, 29, 72, 0..35)',
+              background: 'rgba(225, 29, 72, 0.92)',
               clipPath: 'polygon(5% 0, 100% 0, 95% 100%, 0 100%)'
             }}
           >
