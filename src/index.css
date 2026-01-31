@@ -45,30 +45,32 @@ body {
 }
 
 /* ===============================
-   GLOBAL BACKGROUNDS
+   GLOBAL TOKENS
 ================================ */
-.bg-bg-primary {
-  background-color: var(--bg-primary);
+.bg-bg-primary { background-color: var(--bg-primary); }
+.bg-bg-card { background-color: var(--bg-card); }
+
+.text-text-main { color: var(--text-main); }
+.text-muted { color: var(--text-muted); }
+
+.border-ui { border-color: var(--border-ui); }
+
+/* 🔥 IMPORTANT FIXES FOR LIGHT MODE */
+.light .text-white {
+  color: var(--text-main) !important;
 }
 
-.bg-bg-card {
-  background-color: var(--bg-card);
+.light .border-white\/5,
+.light .border-white\/10 {
+  border-color: var(--border-ui) !important;
 }
 
-.text-text-main {
-  color: var(--text-main);
-}
-
-.text-muted {
-  color: var(--text-muted);
-}
-
-.border-ui {
-  border-color: var(--border-ui);
+.light .bg-black {
+  background-color: var(--bg-primary) !important;
 }
 
 /* ===============================
-   CARDS / PRODUCTS FIX
+   CARDS
 ================================ */
 .card-ui {
   background-color: var(--bg-card);
@@ -77,20 +79,18 @@ body {
 }
 
 /* ===============================
-   BUTTON STANDARD
+   BUTTON
 ================================ */
 .btn-drx {
   transition: all 0.25s ease;
 }
 
 /* ===============================
-   SCROLLBAR (Optional polish)
+   SCROLLBAR
 ================================ */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
-  height: 6px;
 }
-
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(225, 29, 72, 0.6);
   border-radius: 10px;
