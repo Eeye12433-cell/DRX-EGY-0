@@ -157,7 +157,7 @@ const Home: React.FC<HomeProps> = ({
 
         {/* Content Wrapper */}
         <div className="container relative z-20 mx-auto px-6 flex">
-          <div className="">
+          <div className={`w-full flex ${isRTL ? "justify-end" : "justify-start"}`}>
             {/* HERO BOX */}
             <div ref={heroBoxRef} className={`
                 max-w-4xl p-8 md:p-12 border border-white/10 shadow-2xl
