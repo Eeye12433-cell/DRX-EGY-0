@@ -19,38 +19,30 @@ import PerformanceCoach from './components/PerformanceCoach';
 import ComparisonBar from './components/ComparisonBar';
 import ComparisonMatrix from './components/ComparisonMatrix';
 
-const safeParse = <T,>(value: string | null, fallback: T): T => {
-  if (!value) return fallback;
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return fallback;
-  }
-};
-
 const ContactView: React.FC<{ lang: 'ar' | 'en' }> = ({ lang }) => (
   <div className="max-w-2xl mx-auto py-20 px-4">
     <h2 className="text-5xl font-oswald uppercase mb-8 text-center">
-      {lang === 'ar' ? 'تواصل' : 'Contact'} <span className="text-drxred">{lang === 'ar' ? 'معنا' : 'Us'}</span>
+      {lang === 'ar' ? 'تواصل' : 'Contact'}{' '}
+      <span className="text-drxred">{lang === 'ar' ? 'معنا' : 'Us'}</span>
     </h2>
-    <div className="bg-bg-card border border-ui p-10 space-y-6">
+    <div className="bg-bg-card border border-white/5 p-10 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <input
           type="text"
           placeholder={lang === 'ar' ? 'الاسم' : 'Name'}
-          className="bg-bg-primary border border-ui p-4 font-mono text-xs focus:border-drxred outline-none"
+          className="bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none"
         />
         <input
           type="email"
           placeholder={lang === 'ar' ? 'الايميل' : 'Email'}
-          className="bg-bg-primary border border-ui p-4 font-mono text-xs focus:border-drxred outline-none"
+          className="bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none"
         />
       </div>
       <textarea
         rows={5}
         placeholder={lang === 'ar' ? 'رسالتك' : 'Message'}
-        className="w-full bg-bg-primary border border-ui p-4 font-mono text-xs focus:border-drxred outline-none resize-none"
-      />
+        className="w-full bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none resize-none"
+      ></textarea>
       <button className="w-full bg-drxred text-white py-4 font-bold uppercase tracking-widest hover:bg-zinc-900 transition-all btn-drx">
         {lang === 'ar' ? 'إرسال' : 'Send Message'}
       </button>
@@ -63,33 +55,41 @@ const PolicyView: React.FC<{ lang: 'ar' | 'en'; type: string }> = ({ lang, type 
     shipping: { ar: 'سياسة الشحن', en: 'Shipping Policy' },
     refund: { ar: 'سياسة الاسترجاع', en: 'Refund Policy' },
     privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
-    terms: { ar: 'شروط الخدمة', en: 'Terms of Service' }
+    terms: { ar: 'شروط الخدمة', en: 'Terms of Service' },
   };
 
-  const title = titles[type] || { ar: 'السياسات', en: 'Policies' };
+  const title = titles[type] || { ar: 'سياسة', en: 'Policy' };
 
   return (
     <div className="max-w-4xl mx-auto py-20 px-4 prose prose-invert">
-      <h2 className="text-5xl font-oswald uppercase mb-12 text-drxred">{lang === 'ar' ? title.ar : title.en}</h2>
+      <h2 className="text-5xl font-oswald uppercase mb-12 text-drxred">
+        {lang === 'ar' ? title.ar : title.en}
+      </h2>
       <div className="space-y-8 text-zinc-400 font-inter">
         <p className="text-lg leading-relaxed">
           {lang === 'ar'
             ? 'نحن في DRX EGYPT نلتزم بأعلى معايير الجودة والشفافية مع عملائنا.'
             : 'At DRX EGYPT, we are committed to the highest standards of quality and transparency with our customers.'}
         </p>
-
         <section>
           <h3 className="text-text-main uppercase font-oswald text-xl mb-4">
             01. {lang === 'ar' ? 'الالتزام بالجودة' : 'Quality Commitment'}
           </h3>
-          <p>{lang === 'ar' ? 'جميع منتجاتنا تخضع للفحص والتحقق من الأصالة.' : 'All our products undergo inspection and authenticity verification.'}</p>
+          <p>
+            {lang === 'ar'
+              ? 'جميع منتجاتنا تخضع للفحص والتحقق من الأصالة.'
+              : 'All our products undergo inspection and authenticity verification.'}
+          </p>
         </section>
-
         <section>
           <h3 className="text-text-main uppercase font-oswald text-xl mb-4">
             02. {lang === 'ar' ? 'التوزيع الرسمي' : 'Official Distribution'}
           </h3>
-          <p>{lang === 'ar' ? "Nature's Rule Egypt هي الموزع الرسمي الوحيد في مصر." : "Nature's Rule Egypt is the only official distributor in Egypt."}</p>
+          <p>
+            {lang === 'ar'
+              ? "Nature's Rule Egypt هي الموزع الرسمي الوحيد في مصر."
+              : "Nature's Rule Egypt is the only official distributor in Egypt."}
+          </p>
         </section>
       </div>
     </div>
@@ -101,7 +101,11 @@ const App: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [viewHistory, setViewHistory] = useState<string[]>([]);
-  const [stripeConfig, setStripeConfig] = useState<StripeConfig>({ publicKey: '', secretKey: '', enabled: false });
+  const [stripeConfig, setStripeConfig] = useState<StripeConfig>({
+    publicKey: '',
+    secretKey: '',
+    enabled: false,
+  });
   const [codes, setCodes] = useState<Record<string, VerificationCode>>({});
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -115,13 +119,14 @@ const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Load persisted state
   useEffect(() => {
-    const savedProducts = safeParse<Product[]>(localStorage.getItem('drx-products'), []);
-    setProducts(savedProducts.length ? savedProducts : INITIAL_PRODUCTS);
+    const savedProducts = localStorage.getItem('drx-products');
+    setProducts(savedProducts ? JSON.parse(savedProducts) : INITIAL_PRODUCTS);
 
-    const savedCodes = safeParse<Record<string, VerificationCode>>(localStorage.getItem('drx-codes'), {});
-    if (Object.keys(savedCodes).length) {
-      setCodes(savedCodes);
+    const savedCodes = localStorage.getItem('drx-codes');
+    if (savedCodes) {
+      setCodes(JSON.parse(savedCodes));
     } else {
       const initialCodes: Record<string, VerificationCode> = {};
       for (let i = 1; i <= 150; i++) {
@@ -131,19 +136,26 @@ const App: React.FC = () => {
       setCodes(initialCodes);
     }
 
-    setOrders(safeParse<Order[]>(localStorage.getItem('drx-orders'), []));
-    setStripeConfig(safeParse<StripeConfig>(localStorage.getItem('drx-stripe-config'), { publicKey: '', secretKey: '', enabled: false }));
+    const savedOrders = localStorage.getItem('drx-orders');
+    if (savedOrders) setOrders(JSON.parse(savedOrders));
 
-    const savedTheme = localStorage.getItem('drx-theme') as 'dark' | 'light' | null;
+    const savedStripe = localStorage.getItem('drx-stripe-config');
+    if (savedStripe) setStripeConfig(JSON.parse(savedStripe));
+
+    const savedTheme = localStorage.getItem('drx-theme');
     if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);
 
-    const savedLang = localStorage.getItem('drx-lang') as 'ar' | 'en' | null;
+    const savedLang = localStorage.getItem('drx-lang');
     if (savedLang === 'ar' || savedLang === 'en') setLang(savedLang);
 
-    setCart(safeParse<CartItem[]>(localStorage.getItem('drx-cart'), []));
-    setViewHistory(safeParse<string[]>(localStorage.getItem('drx-view-history'), []));
+    const savedCart = localStorage.getItem('drx-cart');
+    if (savedCart) setCart(JSON.parse(savedCart));
+
+    const savedViewHistory = localStorage.getItem('drx-view-history');
+    if (savedViewHistory) setViewHistory(JSON.parse(savedViewHistory));
   }, []);
 
+  // Persist state + apply theme/lang to root
   useEffect(() => {
     localStorage.setItem('drx-products', JSON.stringify(products));
     localStorage.setItem('drx-codes', JSON.stringify(codes));
@@ -155,21 +167,10 @@ const App: React.FC = () => {
     localStorage.setItem('drx-view-history', JSON.stringify(viewHistory));
 
     const root = document.documentElement;
-
-    // Apply theme class to <html>
     root.classList.remove('dark', 'light');
     root.classList.add(theme);
-
-    // Make browser native UI match theme (inputs/scrollbar)
-    root.style.colorScheme = theme;
-
-    // Language direction
     root.lang = lang;
     root.dir = lang === 'ar' ? 'rtl' : 'ltr';
-
-    // Ensure body uses CSS vars too (fix: frame stays black in light mode)
-    document.body.style.backgroundColor = 'var(--bg-primary)';
-    document.body.style.color = 'var(--text-main)';
   }, [products, codes, cart, orders, stripeConfig, theme, lang, viewHistory]);
 
   // Track product views
@@ -177,7 +178,7 @@ const App: React.FC = () => {
     const pathParts = location.pathname.split('/');
     if (pathParts[1] === 'product' && pathParts[2]) {
       const productId = pathParts[2];
-      setViewHistory(prev => {
+      setViewHistory((prev) => {
         if (prev.includes(productId)) return prev;
         return [productId, ...prev].slice(0, 10);
       });
@@ -185,37 +186,46 @@ const App: React.FC = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    gsap.fromTo('.page-content', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' });
+    gsap.fromTo(
+      '.page-content',
+      { opacity: 0, y: 10 },
+      { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
+    );
   }, [location.pathname]);
 
   const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
+    setCart((prev) => {
+      const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
-        return prev.map(item => (item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+        return prev.map((item) =>
+          item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
       }
       return [...prev, { product, quantity: 1 }];
     });
     setIsCartOpen(true);
   };
 
-  const removeFromCart = (productId: string) => setCart(prev => prev.filter(item => item.product.id !== productId));
+  const removeFromCart = (productId: string) =>
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
 
   const updateQuantity = (productId: string, delta: number) => {
-    setCart(prev =>
+    setCart((prev) =>
       prev
-        .map(item => {
-          if (item.product.id === productId) return { ...item, quantity: Math.max(0, item.quantity + delta) };
+        .map((item) => {
+          if (item.product.id === productId) {
+            return { ...item, quantity: Math.max(0, item.quantity + delta) };
+          }
           return item;
         })
-        .filter(item => item.quantity > 0)
+        .filter((item) => item.quantity > 0)
     );
   };
 
   const clearCart = () => window.confirm(lang === 'ar' ? 'هل تريد إفراغ السلة؟' : 'Clear entire cart?') && setCart([]);
 
   const handleOrderComplete = (newOrder: Order) => {
-    setOrders(prev => [...prev, newOrder]);
+    setOrders((prev) => [...prev, newOrder]);
     setCart([]);
     setIsCheckoutOpen(false);
     setIsCartOpen(false);
@@ -223,23 +233,25 @@ const App: React.FC = () => {
   };
 
   const toggleCompare = (product: Product) => {
-    setCompareList(prev =>
-      prev.find(p => p.id === product.id)
-        ? prev.filter(p => p.id !== product.id)
+    setCompareList((prev) =>
+      prev.find((p) => p.id === product.id)
+        ? prev.filter((p) => p.id !== product.id)
         : prev.length < 4
-          ? [...prev, product]
-          : prev
+        ? [...prev, product]
+        : prev
     );
   };
 
   const purchaseHistoryNames = useMemo(() => {
     const names = new Set<string>();
-    orders.forEach(o => o.items.forEach(i => names.add(i.product.name_en)));
+    orders.forEach((o) => o.items.forEach((i) => names.add(i.product.name_en)));
     return Array.from(names);
   }, [orders]);
 
   const viewHistoryNames = useMemo(() => {
-    return viewHistory.map(id => products.find(p => p.id === id)?.name_en).filter(Boolean) as string[];
+    return viewHistory
+      .map((id) => products.find((p) => p.id === id)?.name_en)
+      .filter(Boolean) as string[];
   }, [viewHistory, products]);
 
   return (
@@ -255,7 +267,15 @@ const App: React.FC = () => {
         onAdminClick={() => navigate('/admin')}
       />
 
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} lang={lang} onNavigate={(path) => { navigate(path); setIsSidebarOpen(false); }} />
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        lang={lang}
+        onNavigate={(path) => {
+          navigate(path);
+          setIsSidebarOpen(false);
+        }}
+      />
 
       <CartPanel
         isOpen={isCartOpen}
@@ -281,12 +301,13 @@ const App: React.FC = () => {
 
       <ComparisonBar
         items={compareList}
-        onRemove={(id) => setCompareList(prev => prev.filter(p => p.id !== id))}
+        onRemove={(id) => setCompareList((prev) => prev.filter((p) => p.id !== id))}
         onCompare={() => setIsMatrixOpen(true)}
         lang={lang}
       />
-
-      {isMatrixOpen && <ComparisonMatrix products={compareList} onClose={() => setIsMatrixOpen(false)} lang={lang} />}
+      {isMatrixOpen && (
+        <ComparisonMatrix products={compareList} onClose={() => setIsMatrixOpen(false)} lang={lang} />
+      )}
 
       <button
         onClick={() => setIsCoachOpen(true)}
@@ -331,12 +352,30 @@ const App: React.FC = () => {
                 />
               }
             />
-            <Route path="/product/:id" element={<ProductDetailView lang={lang} products={products} setProducts={setProducts} addToCart={addToCart} />} />
+            <Route
+              path="/product/:id"
+              element={<ProductDetailView lang={lang} products={products} setProducts={setProducts} addToCart={addToCart} />}
+            />
             <Route path="/calculator" element={<CalculatorView lang={lang} />} />
             <Route path="/verify" element={<VerifyView lang={lang} codes={codes} setCodes={setCodes} />} />
             <Route path="/track" element={<TrackOrderView lang={lang} orders={orders} />} />
             <Route path="/contact" element={<ContactView lang={lang} />} />
-            <Route path="/admin" element={<AdminPanel lang={lang} products={products} setProducts={setProducts} codes={codes} setCodes={setCodes} orders={orders} setOrders={setOrders} stripeConfig={stripeConfig} setStripeConfig={setStripeConfig} />} />
+            <Route
+              path="/admin"
+              element={
+                <AdminPanel
+                  lang={lang}
+                  products={products}
+                  setProducts={setProducts}
+                  codes={codes}
+                  setCodes={setCodes}
+                  orders={orders}
+                  setOrders={setOrders}
+                  stripeConfig={stripeConfig}
+                  setStripeConfig={setStripeConfig}
+                />
+              }
+            />
             <Route path="/policies/:type" element={<PolicyView lang={lang} type={location.pathname.split('/').pop() || ''} />} />
           </Routes>
         </div>
