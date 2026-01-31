@@ -4,6 +4,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Product, Category, CartItem } from '../types';
 import { GOALS } from '../constants';
 import { generateProductImage, getAIRecommendations } from '../services/aiService';
+import { RecommendationCardSkeleton } from '../components/ui/Skeleton';
+import { ErrorState } from '../components/ui/ErrorState';
 
 interface ShopProps {
   lang: 'ar' | 'en';
@@ -26,8 +28,9 @@ const Shop: React.FC<ShopProps> = ({
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
-  const [recommendations, setRecommendations] = useState<Product[]>([]);
+const [recommendations, setRecommendations] = useState<Product[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
+  const [recsError, setRecsError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'selection'>(
     mode === 'goals' || mode === 'categories' ? 'selection' : 'grid'
   );
@@ -37,16 +40,18 @@ const Shop: React.FC<ShopProps> = ({
     else setViewMode('grid');
   }, [mode]);
 
-  // Fetch AI Recommendations based on cart and user history
+// Fetch AI Recommendations based on cart and user history
   useEffect(() => {
     const fetchRecs = async () => {
       setLoadingRecs(true);
+      setRecsError(null);
       try {
         const recIds = await getAIRecommendations(cart, products, viewHistoryNames, purchaseHistoryNames);
         const recProducts = products.filter(p => recIds.includes(p.id));
         setRecommendations(recProducts);
       } catch (err) {
         console.error(err);
+        setRecsError("Failed to load recommendations");
       } finally {
         setLoadingRecs(false);
       }
@@ -166,8 +171,8 @@ const Shop: React.FC<ShopProps> = ({
         })}
       </div>
 
-      {/* AI RECOMMENDATIONS SECTION */}
-      {recommendations.length > 0 && (
+{/* AI RECOMMENDATIONS SECTION */}
+      {(loadingRecs || recommendations.length > 0 || recsError) && (
         <div className="pt-24 border-t border-white/5 space-y-12 animate-in fade-in duration-1000">
            <div className="flex items-center gap-8">
               <div className="w-16 h-16 bg-drxred/10 border-2 border-drxred/30 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(225,29,72,0.1)]">
@@ -179,27 +184,43 @@ const Shop: React.FC<ShopProps> = ({
               </div>
            </div>
 
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-              {recommendations.map(p => (
-                <div key={`rec-${p.id}`} onClick={() => navigate(`/product/${p.id}`)} className="bg-drxred/5 border border-drxred/10 p-6 hover:border-drxred/40 transition-all group flex flex-col relative cursor-pointer shadow-lg">
-                  <div className="aspect-square mb-8 overflow-hidden relative bg-black">
-                    <img src={p.image} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-all" alt={p.name_en} />
-                    <div className="absolute top-0 right-0 p-3">
-                       <span className="bg-drxred text-white text-[10px] font-mono px-3 py-1 uppercase font-black tracking-widest shadow-lg">AI Match</span>
+           {loadingRecs && (
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+               {[1, 2, 3, 4].map(i => <RecommendationCardSkeleton key={i} />)}
+             </div>
+           )}
+
+           {recsError && !loadingRecs && (
+             <ErrorState 
+               title="Recommendations Unavailable"
+               message={recsError}
+               variant="fullWidth"
+             />
+           )}
+
+           {!loadingRecs && !recsError && recommendations.length > 0 && (
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+                {recommendations.map(p => (
+                  <div key={`rec-${p.id}`} onClick={() => navigate(`/product/${p.id}`)} className="bg-drxred/5 border border-drxred/10 p-6 hover:border-drxred/40 transition-all group flex flex-col relative cursor-pointer shadow-lg">
+                    <div className="aspect-square mb-8 overflow-hidden relative bg-black">
+                      <img src={p.image} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-all" alt={p.name_en} />
+                      <div className="absolute top-0 right-0 p-3">
+                         <span className="bg-drxred text-white text-[10px] font-mono px-3 py-1 uppercase font-black tracking-widest shadow-lg">AI Match</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                         <h3 className="font-black text-xl font-oswald uppercase leading-tight group-hover:text-drxred transition-colors">{lang === 'ar' ? p.name_ar : p.name_en}</h3>
+                      </div>
+                      <div className="flex justify-between items-end mt-6">
+                         <span className="text-3xl font-oswald text-white font-black">{p.price.toLocaleString()} <span className="text-sm font-mono">LE</span></span>
+                         <button onClick={(e) => { e.stopPropagation(); addToCart(p); }} className="bg-drxred text-white px-8 py-3 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all shadow-lg">Add</button>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                       <h3 className="font-black text-xl font-oswald uppercase leading-tight group-hover:text-drxred transition-colors">{lang === 'ar' ? p.name_ar : p.name_en}</h3>
-                    </div>
-                    <div className="flex justify-between items-end mt-6">
-                       <span className="text-3xl font-oswald text-white font-black">{p.price.toLocaleString()} <span className="text-sm font-mono">LE</span></span>
-                       <button onClick={(e) => { e.stopPropagation(); addToCart(p); }} className="bg-drxred text-white px-8 py-3 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white hover:text-black transition-all shadow-lg">Add</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-           </div>
+                ))}
+             </div>
+           )}
         </div>
       )}
     </div>

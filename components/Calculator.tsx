@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { UserProfile, AINutritionResult } from '../types';
 import { ACTIVITY_LEVELS, GOALS } from '../constants';
 import { getNutritionAdvice } from '../services/aiService';
+import { NutritionSkeleton } from './ui/Skeleton';
+import { ErrorState } from './ui/ErrorState';
 import gsap from 'gsap';
 
 interface CalculatorProps {
@@ -18,8 +20,9 @@ const Calculator: React.FC<CalculatorProps> = ({ lang }) => {
     activity: 'moderate',
     goal: 'bulking'
   });
-  const [loading, setLoading] = useState(false);
+const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AINutritionResult | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -31,20 +34,25 @@ const Calculator: React.FC<CalculatorProps> = ({ lang }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
     setResult(null);
+    setAiError(null);
     try {
       const data = await getNutritionAdvice(profile, lang);
+      if (data.explanation && data.explanation.includes('error') || data.tdee === 0) {
+        setAiError(data.explanation || 'Analysis failed');
+        return;
+      }
       setResult(data);
       setTimeout(() => {
         gsap.fromTo('.result-anim', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.15, ease: 'power3.out' });
       }, 100);
     } catch (err) {
-      alert("AI SYSTEM FAILURE: Connection to Neural Hub lost.");
+      setAiError("AI connection failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -131,7 +139,7 @@ const Calculator: React.FC<CalculatorProps> = ({ lang }) => {
                  <div className="absolute w-[60%] h-[60%] border border-white/5 animate-reverse-slow rounded-full"></div>
               </div>
               
-              {!result && !loading && (
+{!result && !loading && !aiError && (
                 <div className="text-center relative z-10 space-y-6">
                    <div className="w-24 h-24 bg-drxred/10 border border-drxred/30 rounded-full mx-auto flex items-center justify-center animate-pulse">
                       <span className="text-4xl">🧬</span>
@@ -140,14 +148,15 @@ const Calculator: React.FC<CalculatorProps> = ({ lang }) => {
                 </div>
               )}
 
-              {loading && (
-                <div className="text-center relative z-10 space-y-8">
-                   <div className="w-20 h-20 border-2 border-drxred border-t-transparent rounded-full animate-spin mx-auto"></div>
-                   <div className="space-y-2">
-                     <p className="text-sm font-mono text-white uppercase tracking-widest animate-pulse">Processing Biological Data</p>
-                     <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-tighter">Querying Lovable AI Engine...</p>
-                   </div>
-                </div>
+              {loading && <NutritionSkeleton />}
+
+              {aiError && !loading && (
+                <ErrorState 
+                  title="Analysis Failed"
+                  message={aiError}
+                  onRetry={() => { setAiError(null); }}
+                  variant="card"
+                />
               )}
 
               {result && (

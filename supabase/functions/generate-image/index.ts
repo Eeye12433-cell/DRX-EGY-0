@@ -19,10 +19,20 @@ serve(async (req) => {
     }
 
     let prompt: string;
+    let messages: any[];
     
     if (existingImage && editPrompt) {
       // Edit existing image
       prompt = `Edit this supplement product image: ${editPrompt}. Change the background environment to: ${theme}. Maintain the DRX EGYPT industrial aesthetic. Keep the container visible but modify the requested attributes.`;
+      messages = [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt },
+            { type: "image_url", image_url: { url: existingImage } }
+          ]
+        }
+      ];
     } else {
       // Generate new image
       prompt = `High-end professional product photography of a premium supplement container. 
@@ -31,6 +41,9 @@ Technical specs: "${description}".
 Aesthetic: Sleek packaging, minimalist design, chrome accents, DRX branding. 
 Background: ${theme}. 
 Quality: 8k resolution, hyper-realistic, cinematic lighting.`;
+      messages = [
+        { role: "user", content: prompt }
+      ];
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -40,18 +53,9 @@ Quality: 8k resolution, hyper-realistic, cinematic lighting.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-pro-image-preview",
-        messages: [
-          { 
-            role: "user", 
-            content: existingImage 
-              ? [
-                  { type: "image_url", image_url: { url: existingImage } },
-                  { type: "text", text: prompt }
-                ]
-              : prompt
-          }
-        ],
+        model: "google/gemini-2.5-flash-image",
+        messages,
+        modalities: ["image", "text"]
       }),
     });
 
@@ -74,23 +78,15 @@ Quality: 8k resolution, hyper-realistic, cinematic lighting.`;
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
     
-    // Check if content contains base64 image data
-    if (typeof content === 'string' && content.startsWith('data:image')) {
-      return new Response(JSON.stringify({ imageUrl: content }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    
-    // Handle array format response
-    if (Array.isArray(content)) {
-      for (const part of content) {
-        if (part.type === 'image_url' && part.image_url?.url) {
-          return new Response(JSON.stringify({ imageUrl: part.image_url.url }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+    // Extract image from the new response format
+    const message = data.choices?.[0]?.message;
+    if (message?.images && message.images.length > 0) {
+      const imageUrl = message.images[0]?.image_url?.url;
+      if (imageUrl) {
+        return new Response(JSON.stringify({ imageUrl }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
