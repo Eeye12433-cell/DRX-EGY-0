@@ -4,7 +4,7 @@ const Footer: React.FC<{
 }> = ({
   lang
 }) => {
-  return <footer className="bg-bg-secondary border-t border-drxred/20 py-16">
+  return <footer className="bg-bg-secondary border-t border-drxred/20 py-16 opacity-100">
       <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-start">
         <div className="md:col-span-1">
           <h3 className="text-2xl font-black font-oswald text-white mb-4">DRX<span className="text-drxred">EGYPT</span></h3>

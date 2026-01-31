@@ -25,12 +25,12 @@ const Navbar: React.FC<NavbarProps> = ({
       <div className="container mx-auto px-4 md:px-6 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <button onClick={onMenuClick} className="p-2 hover:text-drxred transition-colors">
+            <button onClick={onMenuClick} className="p-2 hover:text-drxred transition-colors opacity-100 py-0 px-[7px] my-[19px] mx-[20px]">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <button onClick={() => navigate('/')} className="text-2xl font-black font-oswald uppercase tracking-tighter md:text-5xl font-mono">
+            <button onClick={() => navigate('/')} className="text-2xl md:text-3xl font-black font-oswald uppercase tracking-tighter">
               DRX<span className="text-drxred">EGYPT</span>
             </button>
           </div>
