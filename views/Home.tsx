@@ -1,161 +1,102 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import gsap from 'gsap';
 import drxLogo from '@/assets/drx-logo.jpeg';
 
-interface HomeHeroProps {
+interface HomeProps {
   lang: 'ar' | 'en';
 }
 
-const HomeHero: React.FC<HomeHeroProps> = ({ lang }) => {
+const Home: React.FC<HomeProps> = ({ lang }) => {
   const navigate = useNavigate();
-
-  const heroRef = useRef<HTMLDivElement>(null);
-  const logoRef = useRef<HTMLImageElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const badgeRef = useRef<HTMLDivElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
-  const hudRef = useRef<HTMLDivElement>(null);
-  const scanlineRef = useRef<HTMLDivElement>(null);
-
   const isRTL = lang === 'ar';
 
-  const copy = useMemo(() => ({
-    badge: isRTL ? 'الموزّع الرسمي المعتمد' : 'Official Certified Hub',
-    line1: isRTL ? 'أداء' : 'German',
-    line2: isRTL ? 'ألماني' : 'Performance',
-    line3: isRTL ? 'فائق' : 'Engineering',
-    ctaShop: isRTL ? 'تصفّح المتجر' : 'Shop Matrix',
-    ctaCalc: isRTL ? 'حاسبة الـ AI' : 'AI Science',
-    hud1: 'System Status: Optimal',
-    hud2: 'Sector: Egypt Distribution Matrix',
-    hud3: 'Protocol: Active',
-    decoLeft: 'DRX-EGYPT-MATRIX-V2',
-    decoRight: '2026 // Official Distributor',
-    logoAlt: 'DRX Logo'
-  }), [isRTL]);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.set([logoRef.current, titleRef.current, badgeRef.current, ctaRef.current], {
-        opacity: 0,
-        y: 80
-      });
-      gsap.set(hudRef.current, { opacity: 0, x: isRTL ? 50 : -50 });
-      gsap.set(scanlineRef.current, { scaleX: 0 });
-
-      const tl = gsap.timeline({ delay: 0.25 });
-
-      tl.to(scanlineRef.current, {
-        scaleX: 1,
-        duration: 1.3,
-        ease: 'power4.inOut'
-      })
-        .to(logoRef.current, { opacity: 1, y: 0, duration: 1.05 }, '-=0.7')
-        .to(badgeRef.current, { opacity: 1, y: 0, duration: 0.7 }, '-=0.6')
-        .to(titleRef.current, { opacity: 1, y: 0, duration: 0.9 }, '-=0.4')
-        .to(ctaRef.current, { opacity: 1, y: 0, duration: 0.7 }, '-=0.3')
-        .to(hudRef.current, { opacity: 1, x: 0, duration: 0.5 }, '-=0.5');
-
-      gsap.to(logoRef.current, {
-        y: -12,
-        duration: 3,
-        repeat: -1,
-        yoyo: true,
-        ease: 'power1.inOut',
-        delay: 1.2
-      });
-    }, heroRef);
-
-    return () => ctx.revert();
+  const copy = useMemo(() => {
+    return {
+      badge: isRTL ? 'الموزّع الرسمي المعتمد' : 'Official Certified Hub',
+      title1: isRTL ? 'أداء' : 'German',
+      title2: isRTL ? 'ألماني' : 'Performance',
+      title3: isRTL ? 'فائق' : 'Engineering',
+      subtitle: isRTL
+        ? 'منتجات ألمانية أصلية — أداء أعلى، نتائج أسرع، وثقة مضمونة داخل مصر.'
+        : 'Original German products — higher performance, faster results, trusted inside Egypt.',
+      btnShop: isRTL ? 'تصفّح المتجر' : 'Shop Products',
+      btnNew: isRTL ? 'وصل حديثاً' : 'New Arrivals'
+    };
   }, [isRTL]);
 
   return (
-    <div ref={heroRef} dir={isRTL ? 'rtl' : 'ltr'} className="-mt-24">
-      <div className="w-screen relative left-1/2 -translate-x-1/2">
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-bg-primary text-text-main">
-          
-          {/* Scanline */}
-          <div
-            ref={scanlineRef}
-            className="absolute top-1/2 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-drxred to-transparent z-20"
+    <div dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* FULL-BLEED HERO (Break out of container) */}
+      <section className="-mt-24 w-screen relative left-1/2 -translate-x-1/2 min-h-[90vh] flex items-center overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src={drxLogo}
+            alt="DRX Egypt"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: 'center 25%' }}
+            loading="eager"
+            decoding="async"
           />
 
-          {/* Background */}
-          <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-bg-primary via-bg-card to-bg-primary" />
-            <div
-              className="absolute inset-0 opacity-10"
-              style={{
-                backgroundImage:
-                  'linear-gradient(rgba(225,29,72,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(225,29,72,0.25) 1px, transparent 1px)',
-                backgroundSize: '50px 50px'
-              }}
-            />
-          </div>
+          {/* Dark overlay for readability (works in both themes) */}
+          <div className="absolute inset-0 bg-black/55" />
 
-          {/* HUD */}
-          <div ref={hudRef} className="absolute top-32 start-10 z-10 hidden lg:block">
-            <div className="space-y-2 border-s-2 border-drxred ps-4">
-              <p className="text-[10px] font-mono text-drxred uppercase tracking-[0.5em] font-black">
-                {copy.hud1}
-              </p>
-              <p className="text-[10px] font-mono text-muted uppercase tracking-[0.3em]">
-                {copy.hud2}
-              </p>
-              <p className="text-[10px] font-mono text-muted uppercase tracking-[0.3em]">
-                {copy.hud3}
-              </p>
-            </div>
-          </div>
+          {/* Bottom gradient to blend into page background */}
+          <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[var(--bg-primary)] to-transparent" />
+        </div>
 
-          {/* Content */}
-          <div className="container relative z-10 px-6 flex flex-col lg:flex-row items-center justify-between gap-12">
-            <div className="flex justify-center lg:justify-start">
-              <img
-                ref={logoRef}
-                src={drxLogo}
-                alt={copy.logoAlt}
-                className="w-[300px] sm:w-[380px] md:w-[460px] lg:w-[580px] object-contain"
-              />
-            </div>
+        {/* Content */}
+        <div className="container relative z-20 mx-auto px-6 flex justify-start">
+          <div
+            className="max-w-4xl p-8 md:p-12 border border-white/10 shadow-2xl"
+            style={{
+              background: 'rgba(225, 29, 72, 0.92)',
+              clipPath: 'polygon(5% 0, 100% 0, 95% 100%, 0 100%)'
+            }}
+          >
+            {/* Badge */}
+            <span className="bg-black text-white px-4 py-2 font-mono text-sm uppercase mb-4 inline-block font-semibold tracking-wider">
+              {copy.badge}
+            </span>
 
-            <div className="max-w-2xl">
-              <div ref={badgeRef} className="mb-8">
-                <span className="bg-drxred/10 text-drxred px-6 py-2.5 font-mono uppercase tracking-[0.4em] font-black border border-drxred/30">
-                  {copy.badge}
-                </span>
-              </div>
+            {/* Title */}
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black font-oswald text-white uppercase leading-none mb-6">
+              {copy.title1} <br />
+              <span className="text-black">{copy.title2}</span>
+              <br />
+              {copy.title3}
+            </h1>
 
-              <h1
-                ref={titleRef}
-                className="font-oswald font-black uppercase leading-[0.85] tracking-tighter mb-12 text-5xl sm:text-6xl md:text-7xl lg:text-[9rem]"
+            {/* Subtitle */}
+            <p className="text-white text-lg md:text-xl mb-8 font-semibold max-w-xl leading-relaxed">
+              {copy.subtitle}
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-4 flex-wrap">
+              <button
+                className="bg-black text-white px-8 py-4 font-bold uppercase tracking-widest hover:bg-zinc-900 transition-all text-sm"
+                onClick={() => navigate('/shop')}
               >
-                <span className="block text-drxred">{copy.line1}</span>
-                <span className="block">{copy.line2}</span>
-                <span className="block text-muted">{copy.line3}</span>
-              </h1>
+                {copy.btnShop}
+              </button>
 
-              <div ref={ctaRef} className="flex gap-6 flex-wrap">
-                <button
-                  onClick={() => navigate('/shop')}
-                  className="bg-drxred text-white px-12 py-6 font-black uppercase tracking-[0.3em] btn-drx"
-                >
-                  {copy.ctaShop}
-                </button>
-                <button
-                  onClick={() => navigate('/calculator')}
-                  className="border border-ui px-12 py-6 font-black uppercase tracking-[0.3em] btn-drx"
-                >
-                  {copy.ctaCalc}
-                </button>
-              </div>
+              <button
+                className="bg-white text-black px-8 py-4 font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all text-sm"
+                onClick={() => navigate('/shop/new')}
+              >
+                {copy.btnNew}
+              </button>
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
+
+      {/* (اختياري) مساحة صغيرة بعد الهيرو عشان مايبقاش لازق */}
+      <div className="h-10" />
     </div>
   );
 };
 
-export default HomeHero;
+export default Home;
