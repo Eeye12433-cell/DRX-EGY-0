@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { UserProfile, AINutritionResult } from '../types';
 import { ACTIVITY_LEVELS, GOALS } from '../constants';
-import { getNutritionAdvice } from '../services/geminiService';
+import { getNutritionAdvice } from '../services/aiService';
 import gsap from 'gsap';
 
 interface CalculatorProps {
@@ -145,7 +145,7 @@ const Calculator: React.FC<CalculatorProps> = ({ lang }) => {
                    <div className="w-20 h-20 border-2 border-drxred border-t-transparent rounded-full animate-spin mx-auto"></div>
                    <div className="space-y-2">
                      <p className="text-sm font-mono text-white uppercase tracking-widest animate-pulse">Processing Biological Data</p>
-                     <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-tighter">Querying Gemini Neural Engine...</p>
+                     <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-tighter">Querying Lovable AI Engine...</p>
                    </div>
                 </div>
               )}

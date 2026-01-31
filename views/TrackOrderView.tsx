@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Order, OrderStatus } from '../types';
-import { getNearbyLogisticsHubs } from '../services/geminiService';
 
 interface TrackOrderViewProps {
   lang: 'ar' | 'en';
@@ -13,8 +12,6 @@ const TrackOrderView: React.FC<TrackOrderViewProps> = ({ lang, orders }) => {
   const [query, setQuery] = useState('');
   const [foundOrder, setFoundOrder] = useState<Order | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
-  const [nearbyHubs, setNearbyHubs] = useState<{text: string, grounding: any[]} | null>(null);
-  const [loadingHubs, setLoadingHubs] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -29,36 +26,6 @@ const TrackOrderView: React.FC<TrackOrderViewProps> = ({ lang, orders }) => {
       }
     }
   }, [location.search, orders]);
-
-  useEffect(() => {
-    if (foundOrder && hasSearched) {
-      // Trigger Maps Grounding to find nearby distribution centers
-      fetchNearbyHubs();
-    }
-  }, [foundOrder, hasSearched]);
-
-  const fetchNearbyHubs = async () => {
-    setLoadingHubs(true);
-    try {
-      // Attempt to get user location for more accurate grounding
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const hubs = await getNearbyLogisticsHubs(pos.coords.latitude, pos.coords.longitude);
-          setNearbyHubs(hubs);
-          setLoadingHubs(false);
-        },
-        async () => {
-          // Default to Cairo coordinates if geo fails
-          const hubs = await getNearbyLogisticsHubs(30.0444, 31.2357);
-          setNearbyHubs(hubs);
-          setLoadingHubs(false);
-        }
-      );
-    } catch (err) {
-      console.error(err);
-      setLoadingHubs(false);
-    }
-  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,48 +105,17 @@ const TrackOrderView: React.FC<TrackOrderViewProps> = ({ lang, orders }) => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-8">
-              <div className="bg-bg-card border border-white/5 p-8 sm:p-12">
-                <h4 className="text-sm font-bold uppercase mb-8 text-drxred font-oswald tracking-widest">Logistics Manifest</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-zinc-400 font-mono text-[11px] uppercase">
-                  <div>
-                    <label className="text-zinc-600 block mb-2">Authenticated Consignee</label>
-                    <p className="text-white text-lg">{foundOrder.shippingInfo.fullName}</p>
-                  </div>
-                  <div>
-                    <label className="text-zinc-600 block mb-2">Destination Node</label>
-                    <p className="text-white">{foundOrder.shippingInfo.address || "Local Pickup Link Active"}</p>
-                  </div>
+            <div className="lg:col-span-2 bg-bg-card border border-white/5 p-8 sm:p-12">
+              <h4 className="text-sm font-bold uppercase mb-8 text-drxred font-oswald tracking-widest">Logistics Manifest</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-zinc-400 font-mono text-[11px] uppercase">
+                <div>
+                  <label className="text-zinc-600 block mb-2">Authenticated Consignee</label>
+                  <p className="text-white text-lg">{foundOrder.shippingInfo.fullName}</p>
                 </div>
-              </div>
-
-              {/* MAPS GROUNDING SECTION */}
-              <div className="bg-[#0a0a0a] border border-blue-500/20 p-8 sm:p-12 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4"><span className="text-[8px] font-mono text-blue-500 uppercase tracking-widest">Google Maps Grounding Active</span></div>
-                <h4 className="text-sm font-bold uppercase mb-8 text-blue-500 font-oswald tracking-widest flex items-center gap-3">
-                   <div className="w-4 h-4 rounded-full bg-blue-500/20 border border-blue-500 flex items-center justify-center"><span className="text-[8px]">📍</span></div>
-                   Nearby Distribution Nodes (Egypt Sector)
-                </h4>
-                
-                {loadingHubs ? (
-                  <div className="py-10 text-center"><div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div></div>
-                ) : nearbyHubs ? (
-                  <div className="space-y-6">
-                    <p className="text-xs font-mono text-zinc-400 leading-relaxed uppercase">{nearbyHubs.text}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                      {nearbyHubs.grounding.map((chunk: any, i: number) => (
-                        chunk.maps && (
-                          <a key={i} href={chunk.maps.uri} target="_blank" rel="noopener noreferrer" className="bg-black border border-white/10 p-4 hover:border-blue-500 transition-all flex flex-col gap-1 group">
-                             <span className="text-[10px] font-bold text-white uppercase group-hover:text-blue-500">{chunk.maps.title}</span>
-                             <span className="text-[8px] text-zinc-600 uppercase tracking-tighter">Verified Logistics Node • Open in Maps</span>
-                          </a>
-                        )
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-[9px] font-mono text-zinc-700 uppercase italic">Uplink to Google Maps unsuccessful.</p>
-                )}
+                <div>
+                  <label className="text-zinc-600 block mb-2">Destination Node</label>
+                  <p className="text-white">{foundOrder.shippingInfo.address || "Local Pickup Link Active"}</p>
+                </div>
               </div>
             </div>
 
