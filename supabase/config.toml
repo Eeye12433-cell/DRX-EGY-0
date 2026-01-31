@@ -1,1 +1,13 @@
 project_id = "xhmlhxxngqdvwaicmamo"
+
+[functions.nutrition-advice]
+verify_jwt = false
+
+[functions.ai-recommendations]
+verify_jwt = false
+
+[functions.generate-image]
+verify_jwt = false
+
+[functions.performance-coach]
+verify_jwt = false

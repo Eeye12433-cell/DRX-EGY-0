@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Product, Category, VerificationCode, Order, OrderStatus, StripeConfig } from '../types';
 import { GOALS } from '../constants';
-import { generateProductImage, editProductImage } from '../services/geminiService';
+import { generateProductImage, editProductImage } from '../services/aiService';
 
 interface AdminPanelProps {
   products: Product[];

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import gsap from 'gsap';
+import { supabase } from "@/integrations/supabase/client";
 
 interface PerformanceCoachProps {
   isOpen: boolean;
@@ -9,14 +9,16 @@ interface PerformanceCoachProps {
   lang: 'ar' | 'en';
 }
 
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 const PerformanceCoach: React.FC<PerformanceCoachProps> = ({ isOpen, onClose, lang }) => {
-  const [isActive, setIsActive] = useState(false);
-  const [transcription, setTranscription] = useState<string[]>([]);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const sessionRef = useRef<any>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const nextStartTimeRef = useRef<number>(0);
-  const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -24,110 +26,45 @@ const PerformanceCoach: React.FC<PerformanceCoachProps> = ({ isOpen, onClose, la
     }
   }, [isOpen]);
 
-  const decode = (base64: string) => {
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
-  };
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  const decodeAudioData = async (data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number) => {
-    const dataInt16 = new Int16Array(data.buffer);
-    const frameCount = dataInt16.length / numChannels;
-    const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-    for (let channel = 0; channel < numChannels; channel++) {
-      const channelData = buffer.getChannelData(channel);
-      for (let i = 0; i < frameCount; i++) {
-        channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-      }
-    }
-    return buffer;
-  };
+  const sendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
 
-  const encode = (bytes: Uint8Array) => {
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-  };
+    const userMessage: Message = { role: 'user', content: input.trim() };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
 
-  const startSession = async () => {
     try {
-      const apiKey = import.meta.env.VITE_LOVABLE_API_KEY;
-      if (!apiKey) {
-        setTranscription(["Missing VITE_LOVABLE_API_KEY. Please configure it to enable the Performance Coach."]);
-        setIsActive(false);
-        return;
-      }
-      setIsActive(true);
-      const ai = new GoogleGenAI({ apiKey });
-      
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      const inputContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
-        callbacks: {
-          onopen: () => {
-            const source = inputContext.createMediaStreamSource(stream);
-            const scriptProcessor = inputContext.createScriptProcessor(4096, 1, 1);
-            scriptProcessor.onaudioprocess = (e) => {
-              const inputData = e.inputBuffer.getChannelData(0);
-              const int16 = new Int16Array(inputData.length);
-              for (let i = 0; i < inputData.length; i++) int16[i] = inputData[i] * 32768;
-              sessionPromise.then(s => s.sendRealtimeInput({ 
-                media: { data: encode(new Uint8Array(int16.buffer)), mimeType: 'audio/pcm;rate=16000' } 
-              }));
-            };
-            source.connect(scriptProcessor);
-            scriptProcessor.connect(inputContext.destination);
-          },
-          onmessage: async (message: LiveServerMessage) => {
-            if (message.serverContent?.outputTranscription) {
-              const text = message.serverContent.outputTranscription.text;
-              setTranscription(prev => [...prev.slice(-4), `Coach: ${text}`]);
-            }
-            const audioData = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
-            if (audioData && audioContextRef.current) {
-              setIsSpeaking(true);
-              const buffer = await decodeAudioData(decode(audioData), audioContextRef.current, 24000, 1);
-              const source = audioContextRef.current.createBufferSource();
-              source.buffer = buffer;
-              source.connect(audioContextRef.current.destination);
-              nextStartTimeRef.current = Math.max(nextStartTimeRef.current, audioContextRef.current.currentTime);
-              source.start(nextStartTimeRef.current);
-              nextStartTimeRef.current += buffer.duration;
-              sourcesRef.current.add(source);
-              source.onended = () => {
-                sourcesRef.current.delete(source);
-                if (sourcesRef.current.size === 0) setIsSpeaking(false);
-              };
-            }
-          }
-        },
-        config: {
-          responseModalities: [Modality.AUDIO],
-          systemInstruction: 'You are the DRX Performance Coach. You are an expert in sports nutrition and supplements. Be concise, technical, and motivating. Help users optimize their performance using DRX products.',
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } } }
+      const { data, error } = await supabase.functions.invoke('performance-coach', {
+        body: { 
+          messages: [...messages, userMessage],
+          lang 
         }
       });
-      sessionRef.current = await sessionPromise;
-    } catch (err) {
-      console.error(err);
-      setIsActive(false);
-    }
-  };
 
-  const stopSession = () => {
-    if (sessionRef.current) sessionRef.current.close();
-    setIsActive(false);
-    setIsSpeaking(false);
-    setTranscription([]);
+      if (error) throw error;
+
+      const assistantMessage: Message = { 
+        role: 'assistant', 
+        content: data.response || 'I apologize, but I could not process your request.' 
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (err) {
+      console.error('Coach error:', err);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: lang === 'ar' 
+          ? 'عذراً، حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى.'
+          : 'Connection error. Please try again.' 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -139,65 +76,77 @@ const PerformanceCoach: React.FC<PerformanceCoachProps> = ({ isOpen, onClose, la
         <div className="p-8 border-b border-white/5 flex justify-between items-center bg-black/20">
           <div>
             <h2 className="text-2xl font-black font-oswald uppercase tracking-tight">DRX <span className="text-drxred">Performance Coach</span></h2>
-            <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Neural Interaction Active</p>
+            <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Powered by Lovable AI</p>
           </div>
           <button onClick={onClose} className="text-zinc-500 hover:text-white font-mono text-xs uppercase">[ Close ]</button>
         </div>
 
-        <div className="flex-1 p-8 flex flex-col items-center justify-center space-y-12">
-          <div className="relative">
-            <div className={`w-32 h-32 rounded-full border-4 border-drxred/20 flex items-center justify-center relative ${isActive ? 'animate-pulse' : ''}`}>
-               <div className={`w-24 h-24 rounded-full bg-drxred/10 flex items-center justify-center transition-all duration-500 ${isSpeaking ? 'scale-110 bg-drxred/30' : 'scale-100'}`}>
-                  <div className={`w-12 h-12 rounded-full bg-drxred flex items-center justify-center shadow-[0_0_30px_#e11d48]`}>
-                    <span className="text-2xl">🤖</span>
-                  </div>
-               </div>
-               {isSpeaking && (
-                 <div className="absolute -inset-4 border border-drxred/40 rounded-full animate-ping"></div>
-               )}
-            </div>
-            {isActive && (
-              <div className="mt-8 flex gap-1 justify-center h-4">
-                {[1,2,3,4,5].map(i => (
-                  <div key={i} className={`w-1 bg-drxred rounded-full animate-bounce`} style={{ animationDelay: `${i * 0.1}s`, height: isSpeaking ? '100%' : '20%' }}></div>
-                ))}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+          {messages.length === 0 && (
+            <div className="text-center py-16 space-y-6">
+              <div className="w-20 h-20 bg-drxred/10 border-2 border-drxred/30 rounded-full flex items-center justify-center mx-auto">
+                <span className="text-3xl">🏋️</span>
               </div>
-            )}
-          </div>
-
-          <div className="w-full space-y-4">
-            {transcription.length === 0 ? (
-              <p className="text-center text-zinc-600 font-mono text-[10px] uppercase tracking-mega">Initialize uplink to speak with coach</p>
-            ) : (
               <div className="space-y-2">
-                {transcription.map((t, i) => (
-                  <p key={i} className="text-[11px] font-mono text-zinc-400 uppercase leading-relaxed tracking-tight border-l border-drxred/30 pl-3">
-                    {t}
-                  </p>
-                ))}
+                <p className="text-sm font-mono text-zinc-400 uppercase tracking-wider">
+                  {lang === 'ar' ? 'مرحباً! أنا مدربك الشخصي' : 'Welcome! I\'m your Performance Coach'}
+                </p>
+                <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
+                  {lang === 'ar' ? 'اسألني عن التغذية والمكملات والتمارين' : 'Ask me about nutrition, supplements & training'}
+                </p>
               </div>
-            )}
-          </div>
-
-          {!isActive ? (
-            <button 
-              onClick={startSession}
-              className="w-full bg-drxred text-white py-6 font-black uppercase tracking-[0.4em] text-xs hover:bg-white hover:text-black transition-all shadow-2xl"
-            >
-              Initialize Interaction
-            </button>
-          ) : (
-            <button 
-              onClick={stopSession}
-              className="w-full border border-drxred text-drxred py-6 font-black uppercase tracking-[0.4em] text-xs hover:bg-drxred hover:text-white transition-all"
-            >
-              Terminate Uplink
-            </button>
+            </div>
           )}
+          
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] p-4 ${
+                msg.role === 'user' 
+                  ? 'bg-drxred text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl' 
+                  : 'bg-zinc-900 border border-white/10 text-zinc-300 rounded-tl-xl rounded-tr-xl rounded-br-xl'
+              }`}>
+                <p className="text-sm font-inter leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+              </div>
+            </div>
+          ))}
+          
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-zinc-900 border border-white/10 p-4 rounded-xl">
+                <div className="flex gap-1.5">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="w-2 h-2 bg-drxred rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }}></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-8 border-t border-white/5 bg-black/40 text-[9px] font-mono text-zinc-700 uppercase leading-relaxed tracking-[0.2em]">
-          Uplink utilizes Gemini 2.5 Performance Logic. Biological data is processed locally within the DRX Matrix.
+        <form onSubmit={sendMessage} className="p-6 border-t border-white/5 bg-black/40">
+          <div className="flex gap-3">
+            <input 
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={lang === 'ar' ? 'اكتب سؤالك هنا...' : 'Type your question...'}
+              className="flex-1 bg-black border border-white/10 px-5 py-4 font-inter text-sm outline-none focus:border-drxred transition-all"
+              disabled={isLoading}
+            />
+            <button 
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="bg-drxred text-white px-8 py-4 font-black uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all disabled:opacity-50"
+            >
+              Send
+            </button>
+          </div>
+        </form>
+
+        <div className="px-6 py-4 border-t border-white/5 bg-black/60 text-[9px] font-mono text-zinc-700 uppercase leading-relaxed tracking-[0.15em]">
+          Powered by Lovable AI • Sports nutrition & supplement guidance
         </div>
       </div>
     </div>

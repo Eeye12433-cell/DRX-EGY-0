@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Product, Category, CartItem } from '../types';
 import { GOALS } from '../constants';
-import { generateProductImage, getAIRecommendations } from '../services/geminiService';
+import { generateProductImage, getAIRecommendations } from '../services/aiService';
 
 interface ShopProps {
   lang: 'ar' | 'en';
@@ -175,7 +175,7 @@ const Shop: React.FC<ShopProps> = ({
               </div>
               <div>
                 <h3 className="text-4xl font-black font-oswald uppercase tracking-tight">{lang === 'ar' ? 'توصيات ذكية مخصصة' : 'Neural Optimized Recommendations'}</h3>
-                <p className="text-xs font-mono text-zinc-500 uppercase tracking-[0.3em] font-bold">Personalized stack suggestions via Gemini Hub (Context Aware)</p>
+                <p className="text-xs font-mono text-zinc-500 uppercase tracking-[0.3em] font-bold">Personalized stack suggestions via Lovable AI (Context Aware)</p>
               </div>
            </div>
 

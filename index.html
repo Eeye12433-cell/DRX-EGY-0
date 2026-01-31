@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DRX EGYPT | Official Distributor</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script>
@@ -23,10 +23,10 @@
                         'text-main': 'var(--text-main)',
                         'text-muted': 'var(--text-muted)'
                     },
-                    fontFamily: {
-                        oswald: ['Oswald', 'sans-serif'],
-                        inter: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace']
+fontFamily: {
+                        oswald: ['Bebas Neue', 'sans-serif'],
+                        inter: ['Space Grotesk', 'sans-serif'],
+                        mono: ['IBM Plex Mono', 'monospace']
                     },
                     fontWeight: {
                         thin: '300',
@@ -60,21 +60,24 @@
             --text-muted: #94a3b8;
             --border-ui: rgba(248, 250, 252, 0.06);
         }
-        body {
+body {
             background-color: var(--bg-primary);
             color: var(--text-main);
             -webkit-font-smoothing: antialiased;
             transition: background-color 0.4s ease, color 0.4s ease;
-            font-family: 'Inter', sans-serif;
-            letter-spacing: -0.01em;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: -0.02em;
+            font-weight: 400;
         }
         h1, h2, h3, h4, h5, h6 {
-            font-family: 'Oswald', sans-serif;
+            font-family: 'Bebas Neue', sans-serif;
             text-transform: uppercase;
+            letter-spacing: 0.02em;
         }
-        .mono-ui {
-            font-family: 'JetBrains Mono', monospace;
-            letter-spacing: 0.1em;
+.mono-ui {
+            font-family: 'IBM Plex Mono', monospace;
+            letter-spacing: 0.08em;
+            font-weight: 500;
         }
         .glass-nav {
             backdrop-filter: blur(24px);
