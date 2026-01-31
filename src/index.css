@@ -4,15 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===============================
-   THEME TOKENS (DEFAULT = DARK)
-   NOTE: App.tsx adds class "dark" or "light" to <html>
-================================ */
+/* =========================================================
+   THEME TOKENS (Default = Dark)
+   Works with: .dark / .light  AND  html.dark / html.light
+========================================================= */
 :root {
   /* Brand */
-  --drxred: #e11d48;
+  --drx-red: #e11d48;
 
-  /* Surfaces */
+  /* App backgrounds */
   --bg-primary: #050505;
   --bg-secondary: #0a0a0a;
   --bg-card: #111111;
@@ -25,27 +25,32 @@
   /* Borders */
   --border-color: rgba(255, 255, 255, 0.12);
 
-  /* Overlays (for bg-black/xx usage) */
-  --overlay-40: rgba(0, 0, 0, 0.40);
-  --overlay-60: rgba(0, 0, 0, 0.60);
-  --overlay-90: rgba(0, 0, 0, 0.90);
-
-  /* Optional Tailwind-ish tokens (if you ever use bg-background, text-foreground) */
+  /* Shadcn-style tokens (optional helpers if you use them) */
   --background: 0 0% 2%;
   --foreground: 0 0% 96%;
   --card: 0 0% 7%;
   --card-foreground: 0 0% 96%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 96%;
+  --primary: 346 77% 49%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 12%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 60%;
+  --accent: 346 77% 49%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 0 0% 100%;
   --border: 0 0% 15%;
   --input: 0 0% 15%;
   --ring: 346 77% 49%;
-
   --radius: 0.25rem;
 }
 
-/* ===============================
-   LIGHT THEME OVERRIDES
-================================ */
-html.light {
+/* LIGHT THEME */
+html.light,
+.light {
   --bg-primary: #f5f5f7;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
@@ -56,28 +61,34 @@ html.light {
 
   --border-color: rgba(0, 0, 0, 0.10);
 
-  /* Overlays in light should be subtle, not "pure black" */
-  --overlay-40: rgba(15, 23, 42, 0.08);
-  --overlay-60: rgba(15, 23, 42, 0.12);
-  --overlay-90: rgba(15, 23, 42, 0.18);
-
   --background: 0 0% 98%;
   --foreground: 0 0% 9%;
   --card: 0 0% 100%;
   --card-foreground: 0 0% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
+  --secondary: 0 0% 94%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 40%;
   --border: 0 0% 88%;
   --input: 0 0% 88%;
 }
 
-/* ===============================
-   BASE / TYPOGRAPHY
-================================ */
+/* DARK THEME (explicit, optional) */
+html.dark,
+.dark {
+  /* intentionally same as :root */
+}
+
+/* =========================================================
+   BASE TYPOGRAPHY + RENDERING
+========================================================= */
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Arabic default font (clearer), English switches automatically */
 body {
   font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg-primary);
@@ -85,87 +96,88 @@ body {
   transition: background-color 0.35s ease, color 0.35s ease;
   overflow-x: hidden;
   font-size: 16px;
-  line-height: 1.65;
+  line-height: 1.6;
 }
 
-/* If page is English, prefer Inter-like system; keep Cairo for Arabic */
-html[lang="en"] body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-h1, h2, h3, h4, h5, h6 {
+/* headings */
+h1, h2, h3, h4, h5, h6,
+.font-oswald {
   font-family: 'Oswald', sans-serif;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
-.font-oswald { font-family: 'Oswald', sans-serif; }
-.font-mono { font-family: 'JetBrains Mono', monospace; }
-.font-inter { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+/* monospace */
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
 
-/* ===============================
-   GLOBAL UTILS (USED IN YOUR JSX)
-================================ */
+/* =========================================================
+   YOUR PROJECT UTILITY CLASSES (matches your existing usage)
+========================================================= */
 .bg-bg-primary { background-color: var(--bg-primary); }
 .bg-bg-card { background-color: var(--bg-card); }
-.text-text-main { color: var(--text-primary); }
+
+.text-text-main { color: var(--text-primary); }   /* you use this in App.tsx */
 .text-muted { color: var(--text-muted); }
+
 .border-ui { border-color: var(--border-color); }
 
-.card-ui {
-  background-color: var(--bg-card);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
+/* =========================================================
+   THE BIG FIX: Light mode issues with Tailwind utility colors
+   - Many components use bg-black and text-white
+   - In light mode that makes the "frame" stay black and text vanish
+   We'll override ONLY in light mode, and more safely:
+========================================================= */
 
-/* ===============================
-   🔥 FIX: LIGHT MODE "text-white" DISAPPEARS
-   Many components use text-white heavily.
-   In light mode, force those to readable primary text.
-================================ */
-html.light .text-white {
-  color: var(--text-primary) !important;
-}
-
-/* Muted zinc in light sometimes becomes too faint */
-html.light .text-zinc-400,
-html.light .text-zinc-500,
-html.light .text-zinc-600,
-html.light .text-zinc-700 {
-  color: var(--text-muted) !important;
-}
-
-/* ===============================
-   🔥 FIX: LIGHT MODE BLACK FRAMES / OVERLAYS
-   Components use bg-black, bg-black/40, bg-black/60, bg-black/90.
-   Replace with theme-aware overlays.
-================================ */
-html.light .bg-black {
+/* Make "bg-black" behave like theme background in LIGHT */
+html.light .bg-black,
+.light .bg-black {
   background-color: var(--bg-secondary) !important;
 }
 
-/* Tailwind classnames with slash need escaping */
-html.light .bg-black\/40 { background-color: var(--overlay-40) !important; }
-html.light .bg-black\/60 { background-color: var(--overlay-60) !important; }
-html.light .bg-black\/90 { background-color: var(--overlay-90) !important; }
-
-/* Also borders like border-white/5 etc become too harsh/odd in light */
+/* Fix borders that are hardcoded like border-white/5, border-white/10 */
 html.light .border-white\/5,
 html.light .border-white\/10,
 html.light .border-white\/20,
-html.light .border-white\/30 {
+.light .border-white\/5,
+.light .border-white\/10,
+.light .border-white\/20 {
   border-color: var(--border-color) !important;
 }
 
-/* If you use ring/outline based on white */
-html.light .ring-white\/10,
-html.light .ring-white\/20 {
-  --tw-ring-color: var(--border-color) !important;
+/*
+  Fix text-white only when it's on light surfaces.
+  (We DO NOT globally change .text-white everywhere لأن في مناطق لازم تفضل أبيض
+   زي bg-drxred أو overlay داكن)
+*/
+html.light .bg-bg-card .text-white,
+html.light .bg-bg-primary .text-white,
+html.light .bg-white .text-white,
+.light .bg-bg-card .text-white,
+.light .bg-bg-primary .text-white,
+.light .bg-white .text-white {
+  color: var(--text-primary) !important;
 }
 
-/* ===============================
-   BUTTON / COMPONENT HELPERS
-================================ */
+/* Also improve common zinc colors in light mode for readability */
+html.light .text-zinc-500,
+html.light .text-zinc-600,
+html.light .text-zinc-700,
+.light .text-zinc-500,
+.light .text-zinc-600,
+.light .text-zinc-700 {
+  color: var(--text-muted) !important;
+}
+
+html.light .text-zinc-400,
+.light .text-zinc-400 {
+  color: var(--text-secondary) !important;
+}
+
+/* =========================================================
+   BUTTONS / LINKS / UI
+========================================================= */
 .btn-drx {
   transition: all 0.25s ease;
 }
@@ -181,14 +193,14 @@ html.light .ring-white\/20 {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
   font-weight: 600;
-  transition: all 0.25s ease;
+  transition: all 0.3s;
 }
 .toggle-btn:hover {
-  border-color: var(--drxred);
-  color: var(--drxred);
+  border-color: var(--drx-red);
+  color: var(--drx-red);
 }
 
-/* Sidebar Navigation Links (if present) */
+/* Sidebar links (optional) */
 .nav-link-sidebar {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
@@ -196,7 +208,7 @@ html.light .ring-white\/20 {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
-  transition: color 0.25s ease, padding 0.25s ease;
+  transition: color 0.3s, padding 0.3s;
   background: none;
   border: none;
   cursor: pointer;
@@ -206,13 +218,20 @@ html.light .ring-white\/20 {
   width: 100%;
 }
 .nav-link-sidebar:hover {
-  color: var(--drxred);
+  color: var(--drx-red);
   padding-inline-start: 8px;
 }
 
-/* ===============================
+/* Cards helper */
+.card-ui {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* =========================================================
    SCROLLBAR
-================================ */
+========================================================= */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -221,17 +240,27 @@ html.light .ring-white\/20 {
   background: var(--bg-secondary);
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(225, 29, 72, 0.55);
-  border-radius: 10px;
+  background: #333;
+  border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(225, 29, 72, 0.85);
+  background: var(--drx-red);
 }
 
-/* ===============================
+/* =========================================================
    SELECTION
-================================ */
+========================================================= */
 ::selection {
-  background: var(--drxred);
+  background: var(--drx-red);
   color: #ffffff;
+}
+
+/* =========================================================
+   RESPONSIVE SMALL POLISH
+========================================================= */
+@media (max-width: 768px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
