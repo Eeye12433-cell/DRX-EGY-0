@@ -1,346 +1,399 @@
-import React, { useMemo, useEffect, useRef } from "react";
+import React, { useLayoutEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
 import drxLogo from "@/assets/drx-logo.jpeg";
+
 interface HomeProps {
   lang: "ar" | "en";
 }
-const Home: React.FC<HomeProps> = ({
-  lang
-}) => {
+
+const Home: React.FC<HomeProps> = ({ lang }) => {
   const navigate = useNavigate();
   const isRTL = lang === "ar";
 
-  // GSAP refs
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const heroBoxRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!rootRef.current) return;
-    const ctx = gsap.context(() => {
-      // Hero box entrance
-      gsap.fromTo(heroBoxRef.current, {
-        opacity: 0,
-        x: isRTL ? 40 : -40,
-        y: 10,
-        rotate: -0.2
-      }, {
-        opacity: 1,
-        x: 0,
-        y: 0,
-        rotate: 0,
-        duration: 0.8,
-        ease: "power3.out"
-      });
 
-      // Sections stagger
-      gsap.fromTo(".drx-anim", {
-        opacity: 0,
-        y: 18
-      }, {
+  const copy = useMemo(() => {
+    const ar = {
+      heroBadge: "الموزّع الرسمي المعتمد",
+      heroTitleTop: "Dynamic Rebuild Xceed",
+      heroTitleSub: "أقوى. أذكى. تغذية موثوقة.",
+      heroBtnShop: "تصفّح المتجر",
+      heroBtnNew: "وصل حديثًا",
+      statYears: "30+",
+      statYearsLabel: "سنة خبرة",
+      statGmp: "GMP",
+      statGmpLabel: "جودة معتمدة",
+      statAuth: "100%",
+      statAuthLabel: "منتجات أصلية",
+      whyTitle: "ليه تختار DRX؟",
+      whySub: "٣ عقود خبرة في التغذية الرياضية على مستوى العالم",
+      why1Title: "جودة بريميوم",
+      why1Desc: "مكملات بمعايير تصنيع قوية ومكونات مدروسة علميًا",
+      why2Title: "أصلي ومضمون",
+      why2Desc: "نظام تحقق ضد التقليد على كل منتج لسلامتك",
+      why3Title: "موثوق للرياضيين",
+      why3Desc: "نتايج ثابتة على مدار سنين وتجربة ناس كتير",
+      testiBadge: "Testimonials",
+      testiTitle: "موثوق من رياضيين في كل مكان",
+      testiSub:
+        "ناس حقيقية ونتايج حقيقية — شوف ليه ناس كتير بتختار DRX في رحلتها.",
+      t1: "DRX فرق معايا جدًا… خامات نظيفة ونتيجة واضحة من أول شهر.",
+      t1Name: "ميدو سلامة",
+      t1Role: "لاعب كمال أجسام",
+      t2: "جربت ماركات كتير… بس DRX ثابت في الجودة وده أهم حاجة عندي.",
+      t2Name: "كابتن كريم منصور",
+      t2Role: "مدرب CrossFit",
+      t3: "مفيش تهييج ولا هبد… أداء محترم ومكونات حقيقية.",
+      t3Name: "دنيا أشرف",
+      t3Role: "لاعبة فيتنس",
+      t4: "من بروتين لبري-ووركاوت… كله متوازن ومضمون.",
+      t4Name: "أحمد فوزي",
+      t4Role: "عدّاء ماراثون",
+      bottom1: "30+",
+      bottom1Label: "سنة خبرة",
+      bottom2: "GMP",
+      bottom2Label: "جودة معتمدة",
+      bottom3: "100%",
+      bottom3Label: "أصلي",
+      bottom4: "50K+",
+      bottom4Label: "عميل مبسوط",
+    };
+
+    const en = {
+      heroBadge: "Official Certified Hub",
+      heroTitleTop: "Dynamic Rebuild Xceed",
+      heroTitleSub: "Stronger. Smarter. Trusted Nutrition.",
+      heroBtnShop: "Shop Products",
+      heroBtnNew: "New Arrivals",
+      statYears: "30+",
+      statYearsLabel: "Years of Excellence",
+      statGmp: "GMP",
+      statGmpLabel: "Certified Quality",
+      statAuth: "100%",
+      statAuthLabel: "Authentic Products",
+      whyTitle: "Why Choose DRX?",
+      whySub: "Three decades of excellence in sports nutrition worldwide",
+      why1Title: "Premium Quality",
+      why1Desc: "High-standard supplements with proven ingredients",
+      why2Title: "Authentic Products",
+      why2Desc: "Anti-counterfeit verification on every product",
+      why3Title: "Trusted by Athletes",
+      why3Desc: "Consistent results backed by decades of trust",
+      testiBadge: "Testimonials",
+      testiTitle: "Trusted by Athletes Worldwide",
+      testiSub:
+        "Real athletes. Real results. See why professionals choose DRX.",
+      t1: "DRX helped me break through my plateau — clean quality and real results.",
+      t1Name: "Mido Salama",
+      t1Role: "Bodybuilder",
+      t2: "I've tried many brands — DRX stays consistent. That's what matters.",
+      t2Name: "Coach Karim Mansour",
+      t2Role: "CrossFit Coach",
+      t3: "No hype — solid performance and reliable ingredients.",
+      t3Name: "Donia Ashraf",
+      t3Role: "Fitness Athlete",
+      t4: "From protein to pre-workout — everything is balanced and legit.",
+      t4Name: "Ahmed Fawzy",
+      t4Role: "Marathon Runner",
+      bottom1: "30+",
+      bottom1Label: "Years Experience",
+      bottom2: "GMP",
+      bottom2Label: "Certified Quality",
+      bottom3: "100%",
+      bottom3Label: "Authentic Products",
+      bottom4: "50K+",
+      bottom4Label: "Happy Athletes",
+    };
+
+    return isRTL ? ar : en;
+  }, [isRTL]);
+
+  useLayoutEffect(() => {
+    if (!rootRef.current) return;
+
+    const ctx = gsap.context(() => {
+      gsap.set("[data-anim='fade-up']", { opacity: 0, y: 18 });
+      gsap.set("[data-anim='card']", { opacity: 0, y: 16, scale: 0.98 });
+
+      gsap.to("[data-anim='fade-up']", {
         opacity: 1,
         y: 0,
         duration: 0.7,
-        ease: "power2.out",
-        stagger: 0.12,
-        delay: 0.15
+        ease: "power3.out",
+        stagger: 0.08,
+        delay: 0.1,
       });
 
-      // Cards pop
-      gsap.fromTo(".drx-card", {
-        opacity: 0,
-        y: 22,
-        scale: 0.98
-      }, {
+      gsap.to("[data-anim='card']", {
         opacity: 1,
         y: 0,
         scale: 1,
-        duration: 0.6,
-        ease: "power2.out",
+        duration: 0.65,
+        ease: "power3.out",
         stagger: 0.08,
-        delay: 0.2
+        delay: 0.15,
       });
     }, rootRef);
+
     return () => ctx.revert();
-  }, [isRTL]);
-  const copy = useMemo(() => {
-    return {
-      heroTop: isRTL ? "Dynamic Rebuild Xceed" : "Dynamic Rebuild Xceed",
-      heroSub: isRTL ? "أقوى. أذكى. تغذية موثوقة." : "Stronger. Smarter. Trusted Nutrition.",
-      badge: isRTL ? "الموزّع الرسمي المعتمد" : "Official Certified Hub",
-      title1: isRTL ? "أداء" : "Performance",
-      title2: isRTL ? "ألماني" : "German",
-      title3: isRTL ? "فائق" : "Engineering",
-      subtitle: isRTL ? "منتجات أصلية — أداء أعلى، نتائج أسرع، وثقة مضمونة داخل مصر." : "Authentic products — higher performance, faster results, trusted inside Egypt.",
-      btnShop: isRTL ? "تصفّح المتجر" : "Shop Products",
-      btnNew: isRTL ? "وصل حديثًا" : "New Arrivals",
-      whyTitle: isRTL ? "ليه تختار DRX؟" : "Why Choose DRX?",
-      whySub: isRTL ? "خبرة سنين في التغذية الرياضية وجودة تقدر تعتمد عليها." : "Decades of excellence in sports nutrition you can trust.",
-      why1Title: isRTL ? "جودة ممتازة" : "Premium Quality",
-      why1Desc: isRTL ? "مكوّنات مختارة بعناية وقياسات دقيقة تديك نتيجة حقيقية." : "Carefully selected ingredients with consistent, proven results.",
-      why2Title: isRTL ? "منتجات أصلية" : "Authentic Products",
-      why2Desc: isRTL ? "فحص أصالة ومكافحة تقليد على كل منتج لسلامتك." : "Anti-counterfeit verification on every product for your safety.",
-      why3Title: isRTL ? "ثقة الرياضيين" : "Trusted by Athletes",
-      why3Desc: isRTL ? "ناس كتير بتعتمد عليها في التمرين والتحسين." : "Chosen by athletes for reliable performance and clean formulas.",
-      testTitle: isRTL ? "آراء العملاء" : "Testimonials",
-      testHeading: isRTL ? "موثوق بيها من رياضيين كتير" : "Trusted by Athletes Worldwide",
-      testSub: isRTL ? "ناس حقيقية ونتايج حقيقية — شوف ليه DRX اختيارهم." : "Real athletes. Real results. See why DRX is their go-to choice.",
-      statsTop: [{
-        k: "30+",
-        ar: "سنة خبرة",
-        en: "Years of Excellence"
-      }, {
-        k: "GMP",
-        ar: "جودة معتمدة",
-        en: "Certified Quality"
-      }, {
-        k: "100%",
-        ar: "منتج أصلي",
-        en: "Authentic Products"
-      }],
-      statsBottom: [{
-        k: "30+",
-        ar: "سنة خبرة",
-        en: "Years Experience"
-      }, {
-        k: "GMP",
-        ar: "جودة معتمدة",
-        en: "Certified Quality"
-      }, {
-        k: "100%",
-        ar: "منتج أصلي",
-        en: "Authentic Products"
-      }, {
-        k: "50K+",
-        ar: "عميل مبسوط",
-        en: "Happy Athletes"
-      }],
-      testimonials: [{
-        text: isRTL ? "الفرق ظهر معايا في الأداء بعد وقت قليل… خامات محترمة ونتيجة حقيقية." : "My performance improved fast — clean ingredients and real results.",
-        name: isRTL ? "محمود حنفي" : "Mahmoud Hanafy",
-        role: isRTL ? "لاعب كمال أجسام" : "Bodybuilding Athlete",
-        initials: "MH"
-      }, {
-        text: isRTL ? "جرّبت براندات كتير… DRX ثابتة في الجودة وده أهم حاجة." : "I tried many brands, DRX stays consistent — that’s what matters.",
-        name: isRTL ? "أحمد رزق" : "Ahmed Rizk",
-        role: isRTL ? "كروس فيت" : "CrossFit Athlete",
-        initials: "AR"
-      }, {
-        text: isRTL ? "مفيش تهريج… مكوّنات نظيفة ونتيجة تقدر تعتمد عليها." : "No hype — clean formula and performance I can rely on.",
-        name: isRTL ? "يوسف سعد" : "Youssef Saad",
-        role: isRTL ? "رفع أثقال" : "Weightlifter",
-        initials: "YS"
-      }, {
-        text: isRTL ? "البروتين والبري ووركاوت ممتازين… أحسن حاجة إن كل حاجة واضحة." : "Protein and pre-workout exceeded my expectations — super clear quality.",
-        name: isRTL ? "عمر فؤاد" : "Omar Fouad",
-        role: isRTL ? "عدّاء" : "Runner",
-        initials: "OF"
-      }]
-    };
-  }, [isRTL]);
-  return <div ref={rootRef} dir={isRTL ? "rtl" : "ltr"} className="w-full">
-      {/* =========================
-          HERO - FULL BLEED
-       ========================= */}
-      <section className="-mt-24 w-screen relative left-1/2 -translate-x-1/2 min-h-[90vh] flex items-center overflow-hidden">
-        {/* Background Image */}
+  }, [lang]);
+
+  return (
+    <div ref={rootRef} dir={isRTL ? "rtl" : "ltr"}>
+      {/* HERO (Full Bleed) */}
+      <section className="-mt-24 w-screen relative left-1/2 -translate-x-1/2 min-h-[92vh] flex items-center overflow-hidden">
+        {/* BG */}
         <div className="absolute inset-0 z-0">
-          <img src={drxLogo} alt="DRX Egypt" className="w-full h-full object-cover" style={{
-          objectPosition: "center 35%"
-        }} loading="eager" decoding="async" />
-
-          {/* Softer overlay (خفيف) */}
+          <img
+            src={drxLogo}
+            alt="DRX Egypt"
+            className="w-full h-full object-cover"
+            style={{ objectPosition: "center 35%" }}
+            loading="eager"
+            decoding="async"
+          />
+          {/* overlay */}
           <div className="absolute inset-0 bg-black/45" />
-
-          {/* Bottom gradient */}
+          {/* bottom gradient */}
           <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[var(--bg-primary)] to-transparent" />
         </div>
 
-        {/* Content Wrapper */}
-        <div className="container relative z-20 mx-auto px-6 flex">
-          <div className={`w-full flex ${isRTL ? "justify-end" : "justify-start"}`}>
-            {/* HERO BOX */}
-            <div ref={heroBoxRef} className={`
-                max-w-4xl p-8 md:p-12 border border-white/10 shadow-2xl
-                ${isRTL ? "mr-2 md:mr-6" : "ml-2 md:ml-6"}
-              `} style={{
-            // خففت الكثافة شوية
-            background: "rgba(225, 29, 72, 0.82)",
-            clipPath: "polygon(5% 0, 100% 0, 95% 100%, 0 100%)",
-            backdropFilter: "blur(6px)"
-          }}>
-              {/* Top small title */}
-              <div className="drx-anim mb-4">
-                <div className="text-white/95 font-oswald uppercase tracking-wide text-lg md:text-xl">
-                  {copy.heroTop}
+        {/* CONTENT */}
+        <div className="container relative z-20 mx-auto px-6">
+          <div
+            className={`flex ${
+              isRTL ? "justify-end" : "justify-start"
+            }`}
+          >
+            {/* IMPORTANT: box starts after small page margin */}
+            <div
+              className="max-w-3xl w-full sm:w-[92%] md:w-[820px]"
+              style={{
+                marginInlineStart: isRTL ? undefined : "12px",
+                marginInlineEnd: isRTL ? "12px" : undefined,
+              }}
+            >
+              <div
+                className="p-7 md:p-10 border border-white/10 shadow-2xl backdrop-blur-md"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(15,15,15,0.75), rgba(15,15,15,0.55))",
+                  borderRadius: "14px",
+                }}
+              >
+                <div className="flex flex-wrap items-center gap-3 mb-5">
+                  <span
+                    data-anim="fade-up"
+                    className="bg-white/10 text-white px-4 py-2 font-mono text-[11px] uppercase inline-block font-semibold tracking-wider border border-white/10 rounded-full"
+                  >
+                    {copy.heroBadge}
+                  </span>
+
+                  <span
+                    data-anim="fade-up"
+                    className="text-white/75 font-mono text-[11px] uppercase tracking-widest"
+                  >
+                    DRX • EGYPT
+                  </span>
                 </div>
-                <div className="text-white/90 text-sm md:text-base font-inter">
-                  {copy.heroSub}
-                </div>
-              </div>
 
-              {/* Badge */}
-              <span className="drx-anim bg-black text-white px-4 py-2 font-mono text-sm uppercase mb-4 inline-block font-semibold tracking-wider">
-                {copy.badge}
-              </span>
+                <h1
+                  data-anim="fade-up"
+                  className="text-4xl md:text-6xl lg:text-7xl font-black font-oswald text-white uppercase leading-[0.95] mb-4"
+                >
+                  {copy.heroTitleTop}
+                </h1>
 
-              {/* Title */}
-              <h1 className="drx-anim text-5xl md:text-7xl lg:text-8xl font-black font-oswald text-white uppercase leading-none mb-6">
-                {copy.title1} <br />
-                <span className="text-black">{copy.title2}</span>
-                <br />
-                {copy.title3}
-              </h1>
-
-              {/* Subtitle */}
-              <p className="drx-anim text-white text-lg md:text-xl mb-8 font-semibold max-w-xl leading-relaxed">
-                {copy.subtitle}
-              </p>
-
-              {/* Buttons */}
-              <div className="drx-anim flex gap-4 flex-wrap">
-                <button className="bg-black text-white px-8 py-4 font-bold uppercase tracking-widest hover:bg-zinc-900 transition-all text-sm" onClick={() => navigate("/shop")}>
-                  {copy.btnShop}
-                </button>
-
-                <button className="bg-white text-black px-8 py-4 font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all text-sm" onClick={() => navigate("/shop/new")}>
-                  {copy.btnNew}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================
-          TOP STATS STRIP (Germany-like)
-       ========================= */}
-      <section className="w-full">
-        <div className="w-screen relative left-1/2 -translate-x-1/2">
-          <div className="py-10 bg-transparent" style={{
-          background: "linear-gradient(90deg, rgba(225,29,72,1) 0%, rgba(245,158,11,1) 100%)"
-        }}>
-            <div className="container mx-auto px-6">
-              <div className="text-center text-white drx-anim">
-                <h2 className="font-oswald text-xl md:text-2xl uppercase tracking-wide">
-                  Dynamic Rebuild Xceed
-                </h2>
-                <p className="text-white/90 font-inter mt-1">
-                  {isRTL ? "أقوى. أذكى. تغذية موثوقة." : "Stronger. Smarter. Trusted Nutrition."}
+                <p
+                  data-anim="fade-up"
+                  className="text-white/90 text-base md:text-xl mb-7 font-semibold max-w-xl leading-relaxed"
+                >
+                  {copy.heroTitleSub}
                 </p>
-              </div>
 
-              <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {copy.statsTop.map(s => <div key={s.k} className="drx-card bg-black/15 border border-white/20 rounded-xl p-5 text-center">
-                    <div className="font-oswald text-3xl md:text-4xl text-white">{s.k}</div>
-                    <div className="font-mono text-[11px] md:text-[12px] uppercase tracking-widest text-white/90 mt-1">
-                      {isRTL ? s.ar : s.en}
+                <div data-anim="fade-up" className="flex gap-4 flex-wrap">
+                  <button
+                    className="bg-[#e11d48] text-white px-8 py-4 font-bold uppercase tracking-widest hover:brightness-110 transition-all text-sm rounded-xl shadow-lg shadow-[#e11d48]/20"
+                    onClick={() => navigate("/shop")}
+                  >
+                    {copy.heroBtnShop}
+                  </button>
+
+                  <button
+                    className="bg-white text-black px-8 py-4 font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all text-sm rounded-xl"
+                    onClick={() => navigate("/shop/new")}
+                  >
+                    {copy.heroBtnNew}
+                  </button>
+                </div>
+
+                {/* MINI STATS (top, like germany) */}
+                <div className="mt-7 grid grid-cols-3 gap-3">
+                  {[
+                    { v: copy.statYears, l: copy.statYearsLabel },
+                    { v: copy.statGmp, l: copy.statGmpLabel },
+                    { v: copy.statAuth, l: copy.statAuthLabel },
+                  ].map((s, idx) => (
+                    <div
+                      key={idx}
+                      data-anim="fade-up"
+                      className="bg-white/5 border border-white/10 rounded-xl p-4 text-center"
+                    >
+                      <div className="text-white font-oswald text-2xl md:text-3xl">
+                        {s.v}
+                      </div>
+                      <div className="text-white/70 text-[11px] md:text-xs font-mono uppercase tracking-wider mt-1">
+                        {s.l}
+                      </div>
                     </div>
-                  </div>)}
+                  ))}
+                </div>
               </div>
+
+              {/* subtle hint / spacer */}
+              <div className="h-8" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* =========================
-          WHY CHOOSE
-       ========================= */}
-      <section className="py-14">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-10 drx-anim">
-            <h3 className="font-oswald text-3xl md:text-4xl text-drxred uppercase">
-              {copy.whyTitle}
-            </h3>
-            <p className="text-muted mt-2">{copy.whySub}</p>
-          </div>
+      {/* WHY CHOOSE */}
+      <section className="container mx-auto px-6 py-14">
+        <div className="text-center max-w-3xl mx-auto">
+          <h2
+            data-anim="fade-up"
+            className="text-3xl md:text-4xl font-black font-oswald text-text-main uppercase"
+          >
+            <span className="text-[#e11d48]">{copy.whyTitle}</span>
+          </h2>
+          <p
+            data-anim="fade-up"
+            className="mt-3 text-muted text-sm md:text-base"
+          >
+            {copy.whySub}
+          </p>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="drx-card bg-bg-card border border-white/10 rounded-2xl p-7">
-              <div className="w-12 h-12 rounded-xl bg-drxred/15 border border-drxred/30 flex items-center justify-center mb-4">
-                <span className="text-xl">🏅</span>
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { title: copy.why1Title, desc: copy.why1Desc, icon: "⚡" },
+            { title: copy.why2Title, desc: copy.why2Desc, icon: "✅" },
+            { title: copy.why3Title, desc: copy.why3Desc, icon: "🏅" },
+          ].map((c, idx) => (
+            <div
+              key={idx}
+              data-anim="card"
+              className="bg-bg-card border border-white/10 rounded-2xl p-7 hover:border-[#e11d48]/60 transition-colors"
+            >
+              <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xl mb-4">
+                {c.icon}
               </div>
-              <h4 className="font-oswald text-xl text-text-main mb-2 uppercase">{copy.why1Title}</h4>
-              <p className="text-muted text-sm leading-relaxed">{copy.why1Desc}</p>
+              <h3 className="font-oswald text-xl text-text-main mb-2 uppercase">
+                {c.title}
+              </h3>
+              <p className="text-muted text-sm leading-relaxed">{c.desc}</p>
             </div>
-
-            <div className="drx-card bg-bg-card border border-white/10 rounded-2xl p-7">
-              <div className="w-12 h-12 rounded-xl bg-drxred/15 border border-drxred/30 flex items-center justify-center mb-4">
-                <span className="text-xl">🛡️</span>
-              </div>
-              <h4 className="font-oswald text-xl text-text-main mb-2 uppercase">{copy.why2Title}</h4>
-              <p className="text-muted text-sm leading-relaxed">{copy.why2Desc}</p>
-            </div>
-
-            <div className="drx-card bg-bg-card border border-white/10 rounded-2xl p-7">
-              <div className="w-12 h-12 rounded-xl bg-drxred/15 border border-drxred/30 flex items-center justify-center mb-4">
-                <span className="text-xl">💪</span>
-              </div>
-              <h4 className="font-oswald text-xl text-text-main mb-2 uppercase">{copy.why3Title}</h4>
-              <p className="text-muted text-sm leading-relaxed">{copy.why3Desc}</p>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* =========================
-          TESTIMONIALS
-       ========================= */}
-      <section className="py-14">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-10 drx-anim">
-            <div className="font-mono text-[11px] uppercase tracking-widest text-muted">
-              {copy.testTitle}
-            </div>
-            <h3 className="font-oswald text-3xl md:text-4xl text-text-main uppercase mt-2">
-              {copy.testHeading}
-            </h3>
-            <p className="text-muted mt-2 max-w-2xl mx-auto">{copy.testSub}</p>
+      {/* TESTIMONIALS */}
+      <section className="container mx-auto px-6 pb-14">
+        <div className="text-center max-w-3xl mx-auto">
+          <div
+            data-anim="fade-up"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[11px] font-mono uppercase tracking-widest text-white/80"
+          >
+            ⭐ {copy.testiBadge}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {copy.testimonials.map(t => <div key={t.initials} className="drx-card bg-bg-card border border-white/10 rounded-2xl p-7">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-drxred text-white flex items-center justify-center font-bold font-mono">
-                    {t.initials}
+          <h2
+            data-anim="fade-up"
+            className="mt-4 text-3xl md:text-4xl font-black font-oswald text-text-main uppercase"
+          >
+            {copy.testiTitle}
+          </h2>
+          <p data-anim="fade-up" className="mt-3 text-muted text-sm md:text-base">
+            {copy.testiSub}
+          </p>
+        </div>
+
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[
+            { text: copy.t1, name: copy.t1Name, role: copy.t1Role, initials: "MS" },
+            { text: copy.t2, name: copy.t2Name, role: copy.t2Role, initials: "KM" },
+            { text: copy.t3, name: copy.t3Name, role: copy.t3Role, initials: "DA" },
+            { text: copy.t4, name: copy.t4Name, role: copy.t4Role, initials: "AF" },
+          ].map((t, idx) => (
+            <div
+              key={idx}
+              data-anim="card"
+              className="bg-bg-card border border-white/10 rounded-2xl p-7 relative overflow-hidden"
+            >
+              {/* small accent */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#e11d48]/80" />
+
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center font-mono text-xs text-white/80">
+                  {t.initials}
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex gap-1 text-[#e11d48] mb-3">
+                    {"★★★★★".split("").map((s, i) => (
+                      <span key={i} className="text-sm">
+                        {s}
+                      </span>
+                    ))}
                   </div>
-                  <div className="flex-1">
-                    <div className="flex gap-1 text-drxred mb-3">
-                      {"★★★★★".split("").map((s, i) => <span key={i}>{s}</span>)}
+
+                  <p className="text-white/85 leading-relaxed">
+                    “{t.text}”
+                  </p>
+
+                  <div className="mt-5 pt-5 border-t border-white/10 flex items-center justify-between">
+                    <div>
+                      <div className="text-text-main font-bold">{t.name}</div>
+                      <div className="text-muted text-sm">{t.role}</div>
                     </div>
-                    <p className="text-text-main/90 leading-relaxed">
-                      “{t.text}”
-                    </p>
-                    <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
-                      <div>
-                        <div className="font-oswald text-lg text-text-main">{t.name}</div>
-                        <div className="text-muted text-sm">{t.role}</div>
-                      </div>
-                      <div className="text-drxred font-mono text-xs uppercase tracking-widest">
-                        DRX
-                      </div>
+
+                    <div className="text-[11px] font-mono uppercase tracking-widest text-white/50">
+                      DRX
                     </div>
                   </div>
                 </div>
-              </div>)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* BOTTOM STATS STRIP */}
+        <div className="mt-10 bg-bg-card border border-white/10 rounded-2xl p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            {[
+              { v: copy.bottom1, l: copy.bottom1Label },
+              { v: copy.bottom2, l: copy.bottom2Label },
+              { v: copy.bottom3, l: copy.bottom3Label },
+              { v: copy.bottom4, l: copy.bottom4Label },
+            ].map((s, idx) => (
+              <div key={idx} data-anim="fade-up" className="py-2">
+                <div className="text-text-main font-oswald text-2xl md:text-3xl">
+                  {s.v}
+                </div>
+                <div className="text-muted text-[11px] md:text-xs font-mono uppercase tracking-wider mt-1">
+                  {s.l}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* =========================
-          BOTTOM STATS
-       ========================= */}
-      <section className="pb-16">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {copy.statsBottom.map(s => <div key={s.k} className="drx-card bg-bg-card border border-white/10 rounded-2xl p-6 text-center">
-                <div className="font-oswald text-3xl text-drxred">{s.k}</div>
-                <div className="font-mono text-[11px] uppercase tracking-widest text-muted mt-1">
-                  {isRTL ? s.ar : s.en}
-                </div>
-              </div>)}
-          </div>
-        </div>
-      </section>
-    </div>;
+      {/* Spacer */}
+      <div className="h-8" />
+    </div>
+  );
 };
+
 export default Home;
