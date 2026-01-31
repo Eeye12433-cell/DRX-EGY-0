@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Product } from '../types';
 
@@ -9,58 +8,47 @@ interface ComparisonMatrixProps {
 }
 
 const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({ products, onClose, lang }) => {
-  const specs = [
-    { key: 'category', label_en: 'Operational Sector', label_ar: 'قطاع التشغيل' },
-    { key: 'price', label_en: 'Valuation', label_ar: 'التقييم' },
-    { key: 'inStock', label_en: 'Stock Integrity', label_ar: 'سلامة المخزون' },
-    { key: 'isNew', label_en: 'Deployment Status', label_ar: 'حالة الانتشار' },
-    { key: 'description_en', label_en: 'Tech Spec', label_ar: 'المواصفات الفنية' }
-  ];
+  if (!products || products.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-bg-card border border-white/10 w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-        <div className="p-8 border-b border-white/5 flex justify-between items-center bg-black/40">
-          <h2 className="text-4xl font-black font-oswald uppercase tracking-tighter">Unit <span className="text-drxred">Comparison Matrix</span></h2>
-          <button onClick={onClose} className="text-muted hover:text-white font-mono text-xs uppercase">[ Clear Matrix ]</button>
-        </div>
+    <div className="fixed inset-0 z-[900] bg-black/90 backdrop-blur-md p-4 sm:p-10 overflow-y-auto custom-scrollbar">
+      <div className="max-w-6xl mx-auto bg-bg-card border border-white/10 shadow-2xl p-8 sm:p-12 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-6 right-6 text-[10px] font-mono uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+        >
+          [ {lang === 'ar' ? 'إغلاق' : 'Close'} ]
+        </button>
 
-        <div className="flex-1 overflow-auto p-8 custom-scrollbar">
-          <table className="w-full text-left font-mono text-[11px] uppercase tracking-tight border-collapse">
-            <thead>
-              <tr className="border-b border-white/5">
-                <th className="py-8 w-1/4"></th>
-                {products.map(p => (
-                  <th key={p.id} className="py-8 px-6 text-center">
-                    <div className="space-y-4">
-                      <img src={p.image} className="w-24 h-24 mx-auto object-contain bg-black border border-white/10" alt="" />
-                      <div className="text-sm font-bold font-oswald text-white tracking-widest">
-                        {lang === 'ar' ? p.name_ar : p.name_en}
-                      </div>
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {specs.map(spec => (
-                <tr key={spec.key} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                  <td className="py-6 font-bold text-drxred tracking-mega">
-                    {lang === 'ar' ? spec.label_ar : spec.label_en}
-                  </td>
-                  {products.map(p => (
-                    <td key={p.id} className="py-6 px-6 text-center text-zinc-400">
-                      {spec.key === 'price' ? `${p.price.toLocaleString()} LE` : 
-                       spec.key === 'inStock' ? (p.inStock ? 'ACTIVE' : 'VOID') :
-                       spec.key === 'isNew' ? (p.isNew ? 'NEW' : 'STABLE') :
-                       spec.key === 'description_en' ? (lang === 'ar' ? p.description_ar : p.description_en) :
-                       (p as any)[spec.key]}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <h2 className="text-4xl font-oswald uppercase tracking-tight mb-10">
+          {lang === 'ar' ? 'مصفوفة' : 'Comparison'} <span className="text-drxred">{lang === 'ar' ? 'المقارنة' : 'Matrix'}</span>
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {products.map(p => (
+            <div key={p.id} className="border border-white/10 bg-black/30 p-6">
+              <div className="aspect-square flex items-center justify-center mb-4">
+                <img
+                  src={p.imageUrl || p.image}
+                  className="w-24 h-24 mx-auto object-contain bg-black border border-white/10"
+                  alt=""
+                  onError={(e) => { const img = e.currentTarget as HTMLImageElement; if (img.src !== p.image) img.src = p.image; } }
+                />
+              </div>
+
+              <div className="font-oswald uppercase tracking-tight text-lg leading-tight mb-2">
+                {lang === 'ar' ? p.name_ar : p.name_en}
+              </div>
+
+              <div className="text-drxred font-oswald text-2xl font-bold mb-4">
+                {p.price.toLocaleString()} <span className="text-xs">LE</span>
+              </div>
+
+              <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest leading-relaxed">
+                {lang === 'ar' ? p.description_ar : p.description_en}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
