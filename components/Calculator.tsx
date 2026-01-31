@@ -146,7 +146,7 @@ const Calculator: React.FC<CalculatorProps> = ({
            <div className="relative flex items-center justify-center min-h-[400px]">
               <div className="absolute inset-0 border-2 border-drxred/5 opacity-50 flex items-center justify-center">
                  <div className="w-[80%] h-[80%] border border-drxred/10 animate-spin-slow rounded-full border-solid opacity-100 border-[#f9c7c7] shadow-md"></div>
-                 <div className="absolute w-[60%] h-[60%] border border-white/5 animate-reverse-slow rounded-full border-solid shadow opacity-100"></div>
+                 <div className="absolute w-[60%] h-[60%] border border-white/5 animate-reverse-slow rounded-full"></div>
               </div>
               
           {!result && !loading && !aiError && <div className="text-center relative z-10 space-y-6">
