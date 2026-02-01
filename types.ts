@@ -74,8 +74,21 @@ export interface ShippingInfo {
 
 export enum OrderStatus {
   Pending = "Pending",
+  Confirmed = "Confirmed",
   Shipped = "Shipped",
   Delivered = "Delivered"
+}
+
+export interface AINutritionResult {
+  tdee: number;
+  macros: {
+    protein: number;
+    carbs: number;
+    fats: number;
+  };
+  recommendations: string[];
+  hydration: string;
+  explanation: string;
 }
 
 export interface Order {
