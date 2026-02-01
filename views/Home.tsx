@@ -131,13 +131,21 @@ const Home: React.FC<HomeProps> = ({ lang }) => {
     return <span ref={counterRef}>{prefix}{typeof value === "string" ? value : 0}{suffix}</span>;
   };
 
-  // Main GSAP animations
+  // Main GSAP animations - simplified for reliability
   useLayoutEffect(() => {
     if (!rootRef.current) return;
 
     const ctx = gsap.context(() => {
-      // Create master timeline
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      // Create master timeline with slight delay to ensure DOM is ready
+      const tl = gsap.timeline({ 
+        defaults: { ease: "power3.out" },
+        delay: 0.1 
+      });
+
+      // Set initial visible state first, then animate
+      gsap.set([".hero-badge", ".hero-title-line", ".hero-subtitle", ".hero-cta", ".hero-stat"], {
+        visibility: "visible"
+      });
 
       // Hero scanline effect
       tl.fromTo(
@@ -186,18 +194,15 @@ const Home: React.FC<HomeProps> = ({ lang }) => {
         "-=0.3"
       );
 
-      // Floating particles
+      // Floating particles - simpler animation
       gsap.to(".particle", {
-        y: "random(-20, 20)",
-        x: "random(-10, 10)",
-        duration: "random(2, 4)",
+        y: "random(-15, 15)",
+        x: "random(-8, 8)",
+        duration: 3,
         repeat: -1,
         yoyo: true,
         ease: "sine.inOut",
-        stagger: {
-          each: 0.2,
-          from: "random"
-        }
+        stagger: 0.3
       });
 
       // Glow pulse
@@ -209,55 +214,15 @@ const Home: React.FC<HomeProps> = ({ lang }) => {
         ease: "sine.inOut"
       });
 
-      // Section reveals with intersection observer simulation
-      const sections = gsap.utils.toArray<HTMLElement>(".reveal-section");
-      sections.forEach((section) => {
-        gsap.fromTo(
-          section,
-          { opacity: 0, y: 50 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            scrollTrigger: {
-              trigger: section,
-              start: "top 80%",
-            },
-          }
-        );
-      });
-
       // Cards hover effect setup
       const cards = gsap.utils.toArray<HTMLElement>(".hover-card");
       cards.forEach((card) => {
         card.addEventListener("mouseenter", () => {
-          gsap.to(card, {
-            scale: 1.02,
-            y: -5,
-            duration: 0.3,
-            ease: "power2.out",
-          });
+          gsap.to(card, { scale: 1.02, y: -5, duration: 0.3, ease: "power2.out" });
         });
         card.addEventListener("mouseleave", () => {
-          gsap.to(card, {
-            scale: 1,
-            y: 0,
-            duration: 0.3,
-            ease: "power2.out",
-          });
+          gsap.to(card, { scale: 1, y: 0, duration: 0.3, ease: "power2.out" });
         });
-      });
-
-      // Parallax on hero image
-      gsap.to(".hero-bg-image", {
-        y: 100,
-        ease: "none",
-        scrollTrigger: {
-          trigger: heroRef.current,
-          start: "top top",
-          end: "bottom top",
-          scrub: true,
-        },
       });
 
       // Trigger counter animation
@@ -268,23 +233,23 @@ const Home: React.FC<HomeProps> = ({ lang }) => {
     return () => ctx.revert();
   }, [lang]);
 
-  // Parallax effect on mouse move
+  // Parallax effect on mouse move - throttled for performance
   useEffect(() => {
+    let rafId: number;
     const handleMouseMove = (e: MouseEvent) => {
-      const { clientX, clientY } = e;
-      const xPos = (clientX / window.innerWidth - 0.5) * 20;
-      const yPos = (clientY / window.innerHeight - 0.5) * 20;
-
-      gsap.to(".parallax-layer", {
-        x: xPos,
-        y: yPos,
-        duration: 1,
-        ease: "power2.out",
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const xPos = (e.clientX / window.innerWidth - 0.5) * 15;
+        const yPos = (e.clientY / window.innerHeight - 0.5) * 15;
+        gsap.to(".parallax-layer", { x: xPos, y: yPos, duration: 0.8, ease: "power2.out" });
       });
     };
 
     window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      cancelAnimationFrame(rafId);
+    };
   }, []);
 
   return (
@@ -352,8 +317,8 @@ const Home: React.FC<HomeProps> = ({ lang }) => {
         <div className="container relative z-20 mx-auto px-6 py-20">
           <div className={`flex ${isRTL ? "justify-end" : "justify-start"}`}>
             <div className="max-w-4xl w-full parallax-layer">
-              {/* Badge */}
-              <div className="hero-badge inline-flex items-center gap-3 mb-8">
+              {/* Badge - visible by default, animated after */}
+              <div className="hero-badge inline-flex items-center gap-3 mb-8 opacity-100">
                 <span className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
@@ -363,12 +328,12 @@ const Home: React.FC<HomeProps> = ({ lang }) => {
                 </span>
               </div>
 
-              {/* Title with Split Lines */}
+              {/* Title with Split Lines - visible by default */}
               <h1 className="mb-6">
-                <span className="hero-title-line block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black font-oswald text-white uppercase leading-[0.9] tracking-tight">
+                <span className="hero-title-line block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black font-oswald text-white uppercase leading-[0.9] tracking-tight opacity-100">
                   {copy.heroTitleTop}
                 </span>
-                <span className="hero-title-line block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black font-oswald uppercase leading-[0.9] tracking-tight glow-pulse" style={{ color: "hsl(var(--primary))" }}>
+                <span className="hero-title-line block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black font-oswald uppercase leading-[0.9] tracking-tight glow-pulse opacity-100" style={{ color: "hsl(var(--primary))" }}>
                   {copy.heroTitleBottom}
                 </span>
               </h1>
