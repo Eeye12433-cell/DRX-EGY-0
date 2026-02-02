@@ -3,6 +3,8 @@ import { CartItem, ShippingInfo, Order, OrderStatus } from '../types';
 import { validateShippingForm, ShippingFormData } from '../src/lib/validations';
 import { supabase } from '@/integrations/supabase/client';
 
+type PaymentMethod = 'cod' | 'vodafone_cash' | 'instapay';
+
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,19 +19,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [shipping, setShipping] = useState<ShippingInfo>({
     fullName: '',
     phone: '',
     email: '',
     method: 'delivery',
-    address: ''
+    address: '',
+    city: ''
   });
 
-  const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const deliveryFee = shipping.method === 'delivery' ? 50 : 0;
+  const total = subtotal + deliveryFee;
 
   const handleInputChange = (field: keyof ShippingInfo, value: string) => {
     setShipping(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => {
         const updated = { ...prev };
@@ -61,17 +66,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  const processPayment = async (e: React.FormEvent) => {
+  const processOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const trackingNumber = `DRX-TRK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       
-      // Get current user if logged in
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Create order in Supabase
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -90,7 +93,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
       if (orderError) throw orderError;
 
-      // Create order items
       const orderItems = cart.map(item => ({
         order_id: order.id,
         product_id: item.product.id.startsWith('prod-') ? null : item.product.id,
@@ -127,18 +129,41 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   if (!isOpen) return null;
 
+  const paymentMethods = [
+    {
+      id: 'cod' as PaymentMethod,
+      name: lang === 'ar' ? 'الدفع عند الاستلام' : 'Cash on Delivery',
+      icon: '💵',
+      desc: lang === 'ar' ? 'ادفع نقداً عند استلام طلبك' : 'Pay cash when you receive your order'
+    },
+    {
+      id: 'vodafone_cash' as PaymentMethod,
+      name: 'Vodafone Cash',
+      icon: '📱',
+      desc: lang === 'ar' ? 'حوّل المبلغ على الرقم: 01012345678' : 'Transfer to: 01012345678'
+    },
+    {
+      id: 'instapay' as PaymentMethod,
+      name: 'InstaPay',
+      icon: '🏦',
+      desc: lang === 'ar' ? 'حوّل على: drx.egypt@instapay' : 'Transfer to: drx.egypt@instapay'
+    }
+  ];
+
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
       <div className="bg-bg-card border border-white/10 w-full max-w-2xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]">
         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-black/40">
-          <h2 className="text-2xl font-black font-oswald uppercase tracking-tight">Secure <span className="text-drxred">Checkout</span></h2>
-          <button onClick={onClose} className="text-[10px] font-mono uppercase text-zinc-500 hover:text-white transition-colors">[ Cancel ]</button>
+          <h2 className="text-2xl font-black font-oswald uppercase tracking-tight">
+            {lang === 'ar' ? 'إتمام' : 'Secure'} <span className="text-drxred">{lang === 'ar' ? 'الطلب' : 'Checkout'}</span>
+          </h2>
+          <button onClick={onClose} className="text-[10px] font-mono uppercase text-zinc-500 hover:text-white transition-colors">[ {lang === 'ar' ? 'إلغاء' : 'Cancel'} ]</button>
         </div>
 
         <div className="flex bg-black/60 border-b border-white/5">
           {[1, 2, 3].map(s => (
             <div key={s} className={`flex-1 py-3 text-center text-[10px] font-mono uppercase tracking-widest ${step === s ? 'text-drxred border-b-2 border-drxred' : 'text-zinc-700'}`}>
-              Step 0{s}
+              {lang === 'ar' ? `خطوة ${s}` : `Step 0${s}`}
             </div>
           ))}
         </div>
@@ -149,7 +174,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <h3 className="text-xl font-oswald uppercase mb-4">{lang === 'ar' ? 'معلومات الشحن' : 'Shipping Information'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-mono text-zinc-500 uppercase">Full Name</label>
+                  <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'الاسم الكامل' : 'Full Name'}</label>
                   <input 
                     type="text" 
                     className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred ${errors.fullName ? 'border-red-500' : 'border-white/10'}`}
@@ -160,19 +185,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {errors.fullName && <p className="text-red-500 text-[10px] mt-1">{errors.fullName}</p>}
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-mono text-zinc-500 uppercase">Phone Number</label>
+                  <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</label>
                   <input 
                     type="tel" 
                     className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred ${errors.phone ? 'border-red-500' : 'border-white/10'}`}
                     value={shipping.phone} 
                     onChange={e => handleInputChange('phone', e.target.value)}
                     maxLength={20}
+                    placeholder="01xxxxxxxxx"
                   />
                   {errors.phone && <p className="text-red-500 text-[10px] mt-1">{errors.phone}</p>}
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-mono text-zinc-500 uppercase">Email Address</label>
+                <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'البريد الإلكتروني' : 'Email Address'} ({lang === 'ar' ? 'اختياري' : 'Optional'})</label>
                 <input 
                   type="email" 
                   className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred ${errors.email ? 'border-red-500' : 'border-white/10'}`}
@@ -184,92 +210,176 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               <div className="space-y-4 pt-4">
-                <label className="text-[9px] font-mono text-zinc-500 uppercase">Delivery Method</label>
+                <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'طريقة التوصيل' : 'Delivery Method'}</label>
                 <div className="grid grid-cols-2 gap-4">
                   <button 
+                    type="button"
                     onClick={() => handleInputChange('method', 'delivery')}
-                    className={`p-4 border font-mono text-[10px] uppercase transition-all ${shipping.method === 'delivery' ? 'bg-drxred border-drxred text-white' : 'bg-black border-white/5 text-zinc-600'}`}
+                    className={`p-4 border font-mono text-[10px] uppercase transition-all ${shipping.method === 'delivery' ? 'bg-drxred border-drxred text-white' : 'bg-black border-white/5 text-zinc-600 hover:border-white/20'}`}
                   >
-                    Home Delivery
+                    🚚 {lang === 'ar' ? 'توصيل للمنزل' : 'Home Delivery'}
+                    <span className="block text-[8px] mt-1 opacity-70">+50 LE</span>
                   </button>
                   <button 
+                    type="button"
                     onClick={() => handleInputChange('method', 'pickup')}
-                    className={`p-4 border font-mono text-[10px] uppercase transition-all ${shipping.method === 'pickup' ? 'bg-drxred border-drxred text-white' : 'bg-black border-white/5 text-zinc-600'}`}
+                    className={`p-4 border font-mono text-[10px] uppercase transition-all ${shipping.method === 'pickup' ? 'bg-drxred border-drxred text-white' : 'bg-black border-white/5 text-zinc-600 hover:border-white/20'}`}
                   >
-                    Store Pickup
+                    🏪 {lang === 'ar' ? 'استلام من المتجر' : 'Store Pickup'}
+                    <span className="block text-[8px] mt-1 opacity-70">{lang === 'ar' ? 'مجاناً' : 'Free'}</span>
                   </button>
                 </div>
               </div>
 
               {shipping.method === 'delivery' && (
-                <div className="space-y-1 animate-in fade-in duration-300">
-                  <label className="text-[9px] font-mono text-zinc-500 uppercase">Full Shipping Address</label>
-                  <textarea 
-                    rows={3} 
-                    className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred resize-none ${errors.address ? 'border-red-500' : 'border-white/10'}`}
-                    value={shipping.address} 
-                    onChange={e => handleInputChange('address', e.target.value)}
-                    maxLength={500}
-                  />
-                  {errors.address && <p className="text-red-500 text-[10px] mt-1">{errors.address}</p>}
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'المحافظة' : 'City/Governorate'}</label>
+                    <select
+                      className="w-full bg-black border border-white/10 p-3 text-sm outline-none focus:border-drxred"
+                      value={shipping.city}
+                      onChange={e => handleInputChange('city', e.target.value)}
+                    >
+                      <option value="">{lang === 'ar' ? 'اختر المحافظة' : 'Select City'}</option>
+                      <option value="cairo">{lang === 'ar' ? 'القاهرة' : 'Cairo'}</option>
+                      <option value="giza">{lang === 'ar' ? 'الجيزة' : 'Giza'}</option>
+                      <option value="alexandria">{lang === 'ar' ? 'الإسكندرية' : 'Alexandria'}</option>
+                      <option value="other">{lang === 'ar' ? 'محافظات أخرى' : 'Other Governorates'}</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'العنوان بالتفصيل' : 'Full Address'}</label>
+                    <textarea 
+                      rows={3} 
+                      className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred resize-none ${errors.address ? 'border-red-500' : 'border-white/10'}`}
+                      value={shipping.address} 
+                      onChange={e => handleInputChange('address', e.target.value)}
+                      maxLength={500}
+                      placeholder={lang === 'ar' ? 'الشارع، المبنى، الطابق، الشقة' : 'Street, Building, Floor, Apartment'}
+                    />
+                    {errors.address && <p className="text-red-500 text-[10px] mt-1">{errors.address}</p>}
+                  </div>
                 </div>
               )}
 
               <button onClick={handleNextStep} className="w-full bg-white text-black py-4 font-black uppercase tracking-widest text-xs hover:bg-drxred hover:text-white transition-all mt-6">
-                Continue to Payment
+                {lang === 'ar' ? 'متابعة للدفع' : 'Continue to Payment'}
               </button>
             </div>
           )}
 
           {step === 2 && (
-            <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
-              <div className="flex justify-between items-end border-b border-white/5 pb-4">
-                <h3 className="text-xl font-oswald uppercase">{lang === 'ar' ? 'الدفع الإلكتروني' : 'Secure Payment'}</h3>
-                <div className="text-right">
-                  <p className="text-[9px] font-mono text-zinc-500 uppercase">Total Amount</p>
-                  <p className="text-3xl font-oswald text-drxred font-bold">{total.toLocaleString()} <span className="text-sm">LE</span></p>
+            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+              {/* Order Summary */}
+              <div className="bg-black/40 border border-white/5 p-4 rounded-sm">
+                <h4 className="text-[10px] font-mono text-zinc-500 uppercase mb-3">{lang === 'ar' ? 'ملخص الطلب' : 'Order Summary'}</h4>
+                <div className="space-y-2 text-sm">
+                  {cart.map((item, i) => (
+                    <div key={i} className="flex justify-between text-zinc-400">
+                      <span>{item.quantity}x {lang === 'ar' ? item.product.name_ar : item.product.name_en}</span>
+                      <span>{(item.product.price * item.quantity).toLocaleString()} LE</span>
+                    </div>
+                  ))}
+                  <div className="border-t border-white/5 pt-2 mt-2">
+                    <div className="flex justify-between text-zinc-500 text-xs">
+                      <span>{lang === 'ar' ? 'المجموع الفرعي' : 'Subtotal'}</span>
+                      <span>{subtotal.toLocaleString()} LE</span>
+                    </div>
+                    <div className="flex justify-between text-zinc-500 text-xs">
+                      <span>{lang === 'ar' ? 'التوصيل' : 'Delivery'}</span>
+                      <span>{deliveryFee > 0 ? `${deliveryFee} LE` : (lang === 'ar' ? 'مجاناً' : 'Free')}</span>
+                    </div>
+                    <div className="flex justify-between text-white font-bold text-lg mt-2">
+                      <span>{lang === 'ar' ? 'الإجمالي' : 'Total'}</span>
+                      <span className="text-drxred">{total.toLocaleString()} LE</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <form onSubmit={processPayment} className="space-y-6">
-                <div className="p-6 bg-black border border-white/10 rounded-sm">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-[10px] font-mono text-zinc-400 uppercase">Card Details</span>
-                    <div className="flex gap-2 opacity-50">
-                      <div className="w-8 h-5 bg-white/10 rounded"></div>
-                      <div className="w-8 h-5 bg-white/10 rounded"></div>
-                    </div>
-                  </div>
-                  {/* Simulated Stripe Input */}
-                  <div className="space-y-4">
-                    <input required type="text" placeholder="Card Number" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={19} />
-                    <div className="grid grid-cols-2 gap-4">
-                      <input required type="text" placeholder="MM / YY" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={7} />
-                      <input required type="text" placeholder="CVC" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={4} />
-                    </div>
-                  </div>
+              {/* Payment Methods */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-oswald uppercase">{lang === 'ar' ? 'طريقة الدفع' : 'Payment Method'}</h3>
+                <div className="space-y-3">
+                  {paymentMethods.map(method => (
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() => setPaymentMethod(method.id)}
+                      className={`w-full p-4 border text-left transition-all flex items-start gap-4 ${
+                        paymentMethod === method.id 
+                          ? 'bg-drxred/10 border-drxred' 
+                          : 'bg-black border-white/10 hover:border-white/30'
+                      }`}
+                    >
+                      <span className="text-2xl">{method.icon}</span>
+                      <div className="flex-1">
+                        <div className={`font-bold text-sm ${paymentMethod === method.id ? 'text-drxred' : 'text-white'}`}>
+                          {method.name}
+                        </div>
+                        <div className="text-[10px] text-zinc-500 mt-1">{method.desc}</div>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        paymentMethod === method.id ? 'border-drxred' : 'border-zinc-600'
+                      }`}>
+                        {paymentMethod === method.id && <div className="w-2.5 h-2.5 rounded-full bg-drxred" />}
+                      </div>
+                    </button>
+                  ))}
                 </div>
+              </div>
 
+              {/* Payment Instructions */}
+              {paymentMethod !== 'cod' && (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-sm animate-in fade-in duration-300">
+                  <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest mb-2">
+                    {lang === 'ar' ? '⚠️ تعليمات الدفع' : '⚠️ Payment Instructions'}
+                  </p>
+                  <p className="text-zinc-400 text-sm">
+                    {paymentMethod === 'vodafone_cash' && (
+                      lang === 'ar' 
+                        ? 'قم بتحويل المبلغ الإجمالي على رقم فودافون كاش: 01012345678 ثم أرسل صورة التحويل على واتساب'
+                        : 'Transfer the total amount to Vodafone Cash: 01012345678, then send the transfer screenshot via WhatsApp'
+                    )}
+                    {paymentMethod === 'instapay' && (
+                      lang === 'ar'
+                        ? 'قم بالتحويل على حساب انستاباي: drx.egypt@instapay ثم أرسل صورة التحويل على واتساب'
+                        : 'Transfer to InstaPay account: drx.egypt@instapay, then send the transfer screenshot via WhatsApp'
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {/* Confirm Order */}
+              <form onSubmit={processOrder} className="space-y-4">
                 <button 
                   type="submit" 
                   disabled={loading}
-                  className="w-full bg-drxred text-white py-5 font-black uppercase tracking-[0.3em] text-sm hover:bg-white hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-drxred text-white py-5 font-black uppercase tracking-[0.2em] text-sm hover:bg-white hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-3">
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      {lang === 'ar' ? 'جاري المعالجة...' : 'Processing...'}
+                      {lang === 'ar' ? 'جاري التأكيد...' : 'Processing...'}
                     </span>
                   ) : (
-                    lang === 'ar' ? `دفع ${total.toLocaleString()} جنيه` : `Pay ${total.toLocaleString()} LE`
+                    <>
+                      {paymentMethod === 'cod' 
+                        ? (lang === 'ar' ? `تأكيد الطلب - الدفع عند الاستلام` : `Confirm Order - Pay on Delivery`)
+                        : (lang === 'ar' ? `تأكيد الطلب - ${total.toLocaleString()} جنيه` : `Confirm Order - ${total.toLocaleString()} LE`)
+                      }
+                    </>
                   )}
                 </button>
 
                 <p className="text-[9px] font-mono text-zinc-600 text-center uppercase tracking-widest flex items-center justify-center gap-2">
-                  <span>🔒</span> Secure Encrypted Transaction
+                  <span>🔒</span> {lang === 'ar' ? 'بياناتك محمية ومشفرة' : 'Your data is secure & encrypted'}
                 </p>
               </form>
-              <button type="button" onClick={() => setStep(1)} className="w-full text-[10px] font-mono text-zinc-600 uppercase hover:text-zinc-300 mt-4">Back to Shipping</button>
+
+              <button type="button" onClick={() => setStep(1)} className="w-full text-[10px] font-mono text-zinc-600 uppercase hover:text-zinc-300">
+                {lang === 'ar' ? '← العودة للشحن' : '← Back to Shipping'}
+              </button>
             </div>
           )}
 
@@ -279,21 +389,44 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span className="text-4xl text-green-500">✓</span>
               </div>
               <div>
-                <h3 className="text-3xl font-black font-oswald uppercase text-white mb-2">Order <span className="text-drxred">Deployed</span></h3>
-                <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">Transaction Verified via Stripe Matrix</p>
+                <h3 className="text-3xl font-black font-oswald uppercase text-white mb-2">
+                  {lang === 'ar' ? 'تم' : 'Order'} <span className="text-drxred">{lang === 'ar' ? 'الطلب بنجاح!' : 'Confirmed!'}</span>
+                </h3>
+                <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
+                  {paymentMethod === 'cod' 
+                    ? (lang === 'ar' ? 'سيتم التواصل معك لتأكيد الطلب' : 'We will contact you to confirm')
+                    : (lang === 'ar' ? 'برجاء إرسال صورة التحويل على واتساب' : 'Please send transfer proof via WhatsApp')
+                  }
+                </p>
               </div>
               
               <div className="bg-black/40 border border-white/5 p-6 max-w-sm mx-auto">
-                 <p className="text-[10px] font-mono text-zinc-600 uppercase mb-2">Tracking Identifier</p>
-                 <p className="text-2xl font-oswald text-white tracking-widest font-bold">#ORD-{Date.now().toString().slice(-6)}</p>
-                 <div className="mt-4 pt-4 border-t border-white/5">
-                   <p className="text-[10px] text-zinc-400 font-inter italic">Please save this ID for delivery status telemetry.</p>
-                 </div>
+                <p className="text-[10px] font-mono text-zinc-600 uppercase mb-2">{lang === 'ar' ? 'رقم التتبع' : 'Tracking Number'}</p>
+                <p className="text-xl font-oswald text-white tracking-widest font-bold">DRX-TRK-XXXXXX</p>
+                <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
+                  <p className="text-[10px] text-zinc-400 font-inter">
+                    {lang === 'ar' ? 'احفظ هذا الرقم لتتبع طلبك' : 'Save this number to track your order'}
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-drxred">
+                    <span>📞</span>
+                    <span className="font-mono text-sm">01012345678</span>
+                  </div>
+                </div>
               </div>
 
-              <button onClick={onClose} className="btn-drx bg-white text-black px-12 py-4 font-bold uppercase tracking-widest text-xs hover:bg-drxred hover:text-white transition-all">
-                Return to Matrix
-              </button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <a 
+                  href="https://wa.me/201012345678" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-green-600 text-white px-8 py-4 font-bold uppercase tracking-widest text-xs hover:bg-green-500 transition-all inline-flex items-center justify-center gap-2"
+                >
+                  <span>💬</span> {lang === 'ar' ? 'تواصل واتساب' : 'WhatsApp Us'}
+                </a>
+                <button onClick={onClose} className="btn-drx bg-white text-black px-8 py-4 font-bold uppercase tracking-widest text-xs hover:bg-drxred hover:text-white transition-all">
+                  {lang === 'ar' ? 'العودة للمتجر' : 'Back to Shop'}
+                </button>
+              </div>
             </div>
           )}
         </div>
