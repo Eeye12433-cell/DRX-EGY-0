@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
-import { Product, VerificationCode, CartItem, Order, StripeConfig, OrderStatus } from './types';
+import { Product, CartItem, Order, OrderStatus } from './types';
 import { INITIAL_PRODUCTS } from './constants';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -99,14 +99,7 @@ const PolicyView: React.FC<{ lang: 'ar' | 'en'; type: string }> = ({ lang, type 
 const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [viewHistory, setViewHistory] = useState<string[]>([]);
-  const [stripeConfig, setStripeConfig] = useState<StripeConfig>({
-    publicKey: '',
-    secretKey: '',
-    enabled: false,
-  });
-  const [codes, setCodes] = useState<Record<string, VerificationCode>>({});
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -119,28 +112,10 @@ const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load persisted state
+  // Load persisted state (only non-sensitive data)
   useEffect(() => {
     const savedProducts = localStorage.getItem('drx-products');
     setProducts(savedProducts ? JSON.parse(savedProducts) : INITIAL_PRODUCTS);
-
-    const savedCodes = localStorage.getItem('drx-codes');
-    if (savedCodes) {
-      setCodes(JSON.parse(savedCodes));
-    } else {
-      const initialCodes: Record<string, VerificationCode> = {};
-      for (let i = 1; i <= 150; i++) {
-        const id = `DRX-EGY-${i.toString().padStart(3, '0')}`;
-        initialCodes[id] = { id, used: false };
-      }
-      setCodes(initialCodes);
-    }
-
-    const savedOrders = localStorage.getItem('drx-orders');
-    if (savedOrders) setOrders(JSON.parse(savedOrders));
-
-    const savedStripe = localStorage.getItem('drx-stripe-config');
-    if (savedStripe) setStripeConfig(JSON.parse(savedStripe));
 
     const savedTheme = localStorage.getItem('drx-theme');
     if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);
@@ -155,13 +130,10 @@ const App: React.FC = () => {
     if (savedViewHistory) setViewHistory(JSON.parse(savedViewHistory));
   }, []);
 
-  // Persist state + apply theme/lang to root
+  // Persist state + apply theme/lang to root (only non-sensitive data)
   useEffect(() => {
     localStorage.setItem('drx-products', JSON.stringify(products));
-    localStorage.setItem('drx-codes', JSON.stringify(codes));
     localStorage.setItem('drx-cart', JSON.stringify(cart));
-    localStorage.setItem('drx-orders', JSON.stringify(orders));
-    localStorage.setItem('drx-stripe-config', JSON.stringify(stripeConfig));
     localStorage.setItem('drx-theme', theme);
     localStorage.setItem('drx-lang', lang);
     localStorage.setItem('drx-view-history', JSON.stringify(viewHistory));
@@ -171,7 +143,7 @@ const App: React.FC = () => {
     root.classList.add(theme);
     root.lang = lang;
     root.dir = lang === 'ar' ? 'rtl' : 'ltr';
-  }, [products, codes, cart, orders, stripeConfig, theme, lang, viewHistory]);
+  }, [products, cart, theme, lang, viewHistory]);
 
   // Track product views
   useEffect(() => {
@@ -225,7 +197,7 @@ const App: React.FC = () => {
   const clearCart = () => window.confirm(lang === 'ar' ? 'هل تريد إفراغ السلة؟' : 'Clear entire cart?') && setCart([]);
 
   const handleOrderComplete = (newOrder: Order) => {
-    setOrders((prev) => [...prev, newOrder]);
+    // Orders are now saved directly to Supabase database
     setCart([]);
     setIsCheckoutOpen(false);
     setIsCartOpen(false);
@@ -241,12 +213,6 @@ const App: React.FC = () => {
         : prev
     );
   };
-
-  const purchaseHistoryNames = useMemo(() => {
-    const names = new Set<string>();
-    orders.forEach((o) => o.items.forEach((i) => names.add(i.product.name_en)));
-    return Array.from(names);
-  }, [orders]);
 
   const viewHistoryNames = useMemo(() => {
     return viewHistory
@@ -292,7 +258,6 @@ const App: React.FC = () => {
         isOpen={isCheckoutOpen}
         onClose={() => setIsCheckoutOpen(false)}
         cart={cart}
-        stripeConfig={stripeConfig}
         lang={lang}
         onOrderComplete={handleOrderComplete}
       />
@@ -332,7 +297,7 @@ const App: React.FC = () => {
                   compareList={compareList}
                   cart={cart}
                   viewHistoryNames={viewHistoryNames}
-                  purchaseHistoryNames={purchaseHistoryNames}
+                  purchaseHistoryNames={[]}
                 />
               }
             />
@@ -348,7 +313,7 @@ const App: React.FC = () => {
                   compareList={compareList}
                   cart={cart}
                   viewHistoryNames={viewHistoryNames}
-                  purchaseHistoryNames={purchaseHistoryNames}
+                  purchaseHistoryNames={[]}
                 />
               }
             />
@@ -358,7 +323,7 @@ const App: React.FC = () => {
             />
             <Route path="/calculator" element={<CalculatorView lang={lang} />} />
             <Route path="/verify" element={<VerifyView lang={lang} />} />
-            <Route path="/track" element={<TrackOrderView lang={lang} orders={orders} />} />
+            <Route path="/track" element={<TrackOrderView lang={lang} />} />
             <Route path="/contact" element={<ContactView lang={lang} />} />
             <Route
               path="/admin"
@@ -367,12 +332,6 @@ const App: React.FC = () => {
                   lang={lang}
                   products={products}
                   setProducts={setProducts}
-                  codes={codes}
-                  setCodes={setCodes}
-                  orders={orders}
-                  setOrders={setOrders}
-                  stripeConfig={stripeConfig}
-                  setStripeConfig={setStripeConfig}
                 />
               }
             />

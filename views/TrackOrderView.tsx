@@ -1,37 +1,78 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Order, OrderStatus } from '../types';
+import { OrderStatus } from '../types';
+import { supabase } from '@/integrations/supabase/client';
+
+interface TrackedOrder {
+  trackingNumber: string;
+  status: string;
+  shippingMethod: string;
+  customerName: string;
+  total: number;
+  createdAt: string;
+  items: Array<{
+    product_name: string;
+    quantity: number;
+    product_price: number;
+  }>;
+}
 
 interface TrackOrderViewProps {
   lang: 'ar' | 'en';
-  orders: Order[];
+  orders?: never; // Remove the orders prop - no longer used
 }
 
-const TrackOrderView: React.FC<TrackOrderViewProps> = ({ lang, orders }) => {
+const TrackOrderView: React.FC<TrackOrderViewProps> = ({ lang }) => {
   const [query, setQuery] = useState('');
-  const [foundOrder, setFoundOrder] = useState<Order | null>(null);
+  const [foundOrder, setFoundOrder] = useState<TrackedOrder | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const location = useLocation();
+
+  const trackOrder = async (trackingNumber: string) => {
+    if (!trackingNumber.trim()) return;
+    
+    setIsLoading(true);
+    setError(null);
+    setHasSearched(true);
+    
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('track-order', {
+        body: { trackingNumber: trackingNumber.trim().toUpperCase() }
+      });
+
+      if (fnError) throw fnError;
+
+      if (data?.order) {
+        setFoundOrder(data.order);
+      } else {
+        setFoundOrder(null);
+        if (data?.error) {
+          setError(data.error);
+        }
+      }
+    } catch (err: any) {
+      console.error('Track order error:', err);
+      setError('Failed to track order. Please try again.');
+      setFoundOrder(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
     if (id) {
       setQuery(id);
-      const order = orders.find(o => o.trackingNumber === id || o.id === id);
-      if (order) {
-        setFoundOrder(order);
-        setHasSearched(true);
-      }
+      trackOrder(id);
     }
-  }, [location.search, orders]);
+  }, [location.search]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const order = orders.find(o => o.trackingNumber === query.trim().toUpperCase() || o.id === query.trim());
-    setFoundOrder(order || null);
-    setHasSearched(true);
+    trackOrder(query);
   };
 
   const statusSteps = [
@@ -59,12 +100,33 @@ const TrackOrderView: React.FC<TrackOrderViewProps> = ({ lang, orders }) => {
 
       <div className="bg-bg-card border border-white/10 p-2 sm:p-4 shadow-2xl mb-12 relative overflow-hidden group">
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
-          <input type="text" placeholder="ENTER TRACKING IDENTIFIER (DRX-TRK-XXX)" className="flex-1 bg-black border border-white/5 p-6 font-mono text-lg outline-none focus:border-drxred uppercase tracking-widest transition-all" value={query} onChange={e => setQuery(e.target.value)} />
-          <button type="submit" className="bg-drxred text-white px-12 py-6 font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-xl">Initialize</button>
+          <input 
+            type="text" 
+            placeholder="ENTER TRACKING IDENTIFIER (DRX-TRK-XXX)" 
+            className="flex-1 bg-black border border-white/5 p-6 font-mono text-lg outline-none focus:border-drxred uppercase tracking-widest transition-all" 
+            value={query} 
+            onChange={e => setQuery(e.target.value)} 
+            disabled={isLoading}
+          />
+          <button 
+            type="submit" 
+            className="bg-drxred text-white px-12 py-6 font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-xl disabled:opacity-50"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Searching...' : 'Initialize'}
+          </button>
         </form>
       </div>
 
-      {hasSearched && foundOrder && (
+      {hasSearched && isLoading && (
+        <div className="text-center py-32 bg-bg-card border border-white/10 animate-in fade-in duration-500">
+          <div className="text-7xl mb-6 animate-pulse">🔍</div>
+          <h3 className="text-4xl font-black font-oswald uppercase text-white mb-2">Searching...</h3>
+          <p className="text-zinc-600 font-mono text-xs uppercase tracking-[0.4em]">Querying distribution matrix</p>
+        </div>
+      )}
+
+      {hasSearched && !isLoading && foundOrder && (
         <div className="animate-in fade-in slide-in-from-bottom-6 duration-700 space-y-8">
           <div className="bg-bg-card border border-white/10 p-8 sm:p-12 relative overflow-hidden">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-20 relative z-10">
@@ -110,11 +172,11 @@ const TrackOrderView: React.FC<TrackOrderViewProps> = ({ lang, orders }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-zinc-400 font-mono text-[11px] uppercase">
                 <div>
                   <label className="text-zinc-600 block mb-2">Authenticated Consignee</label>
-                  <p className="text-white text-lg">{foundOrder.shippingInfo.fullName}</p>
+                  <p className="text-white text-lg">{foundOrder.customerName}</p>
                 </div>
                 <div>
-                  <label className="text-zinc-600 block mb-2">Destination Node</label>
-                  <p className="text-white">{foundOrder.shippingInfo.address || "Local Pickup Link Active"}</p>
+                  <label className="text-zinc-600 block mb-2">Delivery Method</label>
+                  <p className="text-white">{foundOrder.shippingMethod}</p>
                 </div>
               </div>
             </div>
@@ -123,7 +185,10 @@ const TrackOrderView: React.FC<TrackOrderViewProps> = ({ lang, orders }) => {
               <h4 className="text-sm font-bold uppercase mb-8 text-drxred font-oswald tracking-widest">Inventory</h4>
               <div className="space-y-4 font-mono text-[10px] uppercase">
                 {foundOrder.items.map((item, i) => (
-                  <div key={i} className="flex justify-between text-zinc-400"><span>{item.quantity}x {item.product.name_en}</span><span>{(item.product.price * item.quantity).toLocaleString()} LE</span></div>
+                  <div key={i} className="flex justify-between text-zinc-400">
+                    <span>{item.quantity}x {item.product_name}</span>
+                    <span>{(item.product_price * item.quantity).toLocaleString()} LE</span>
+                  </div>
                 ))}
                 <div className="mt-8 pt-8 border-t border-white/5 flex justify-between items-end">
                    <span className="text-zinc-600">Gross Value</span>
@@ -135,12 +200,16 @@ const TrackOrderView: React.FC<TrackOrderViewProps> = ({ lang, orders }) => {
         </div>
       )}
 
-      {hasSearched && !foundOrder && (
+      {hasSearched && !isLoading && !foundOrder && (
         <div className="text-center py-32 bg-bg-card border border-white/10 animate-in fade-in duration-500">
           <div className="text-7xl mb-6 opacity-40">🛸</div>
           <h3 className="text-4xl font-black font-oswald uppercase text-white mb-2">Record Non-Existent</h3>
-          <p className="text-zinc-600 font-mono text-xs uppercase tracking-[0.4em]">Tracking uplink failure</p>
-          <button onClick={() => setHasSearched(false)} className="mt-8 px-10 py-4 border border-white/10 text-white font-mono text-[10px] uppercase tracking-widest hover:bg-drxred hover:border-drxred transition-all">Retry Connection</button>
+          <p className="text-zinc-600 font-mono text-xs uppercase tracking-[0.4em]">
+            {error || 'Tracking uplink failure'}
+          </p>
+          <button onClick={() => setHasSearched(false)} className="mt-8 px-10 py-4 border border-white/10 text-white font-mono text-[10px] uppercase tracking-widest hover:bg-drxred hover:border-drxred transition-all">
+            Retry Connection
+          </button>
         </div>
       )}
     </div>

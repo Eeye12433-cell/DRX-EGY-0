@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { CartItem, ShippingInfo, Order, OrderStatus, StripeConfig } from '../types';
+import { CartItem, ShippingInfo, Order, OrderStatus } from '../types';
 import { validateShippingForm, ShippingFormData } from '../src/lib/validations';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   cart: CartItem[];
-  stripeConfig: StripeConfig;
   lang: 'ar' | 'en';
   onOrderComplete: (order: Order) => void;
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({ 
-  isOpen, onClose, cart, stripeConfig, lang, onOrderComplete 
+  isOpen, onClose, cart, lang, onOrderComplete 
 }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -65,11 +65,48 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     e.preventDefault();
     setLoading(true);
 
-    // Simulate Stripe Payment processing
-    setTimeout(() => {
+    try {
       const trackingNumber = `DRX-TRK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      
+      // Get current user if logged in
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Create order in Supabase
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          tracking_number: trackingNumber,
+          total,
+          status: 'Pending',
+          shipping_full_name: shipping.fullName,
+          shipping_phone: shipping.phone,
+          shipping_email: shipping.email || null,
+          shipping_address: shipping.address || null,
+          shipping_method: shipping.method === 'pickup' ? 'pickup' : 'delivery',
+          user_id: user?.id || null
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Create order items
+      const orderItems = cart.map(item => ({
+        order_id: order.id,
+        product_id: item.product.id.startsWith('prod-') ? null : item.product.id,
+        product_name: item.product.name_en,
+        product_price: item.product.price,
+        quantity: item.quantity
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
       const newOrder: Order = {
-        id: `ord-${Date.now()}`,
+        id: order.id,
         trackingNumber,
         items: [...cart],
         total,
@@ -81,7 +118,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       onOrderComplete(newOrder);
       setLoading(false);
       setStep(3);
-    }, 2000);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setLoading(false);
+      alert(lang === 'ar' ? 'حدث خطأ أثناء إتمام الطلب' : 'An error occurred during checkout');
+    }
   };
 
   if (!isOpen) return null;
@@ -190,43 +231,45 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               </div>
 
-              {!stripeConfig.enabled ? (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 p-6 text-center">
-                  <p className="text-xs font-mono text-yellow-500 uppercase tracking-widest">Stripe Gateway Not Configured</p>
-                  <p className="text-[9px] text-zinc-500 mt-2">Administrator must enable payments in terminal.</p>
-                </div>
-              ) : (
-                <form onSubmit={processPayment} className="space-y-6">
-                  <div className="p-6 bg-black border border-white/10 rounded-sm">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-[10px] font-mono text-zinc-400 uppercase">Card Details</span>
-                      <div className="flex gap-2 opacity-50">
-                        <div className="w-8 h-5 bg-white/10 rounded"></div>
-                        <div className="w-8 h-5 bg-white/10 rounded"></div>
-                      </div>
-                    </div>
-                    {/* Simulated Stripe Input */}
-                    <div className="space-y-4">
-                      <input required type="text" placeholder="Card Number" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={19} />
-                      <div className="grid grid-cols-2 gap-4">
-                        <input required type="text" placeholder="MM / YY" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={7} />
-                        <input required type="text" placeholder="CVC" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={4} />
-                      </div>
+              <form onSubmit={processPayment} className="space-y-6">
+                <div className="p-6 bg-black border border-white/10 rounded-sm">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-[10px] font-mono text-zinc-400 uppercase">Card Details</span>
+                    <div className="flex gap-2 opacity-50">
+                      <div className="w-8 h-5 bg-white/10 rounded"></div>
+                      <div className="w-8 h-5 bg-white/10 rounded"></div>
                     </div>
                   </div>
+                  {/* Simulated Stripe Input */}
+                  <div className="space-y-4">
+                    <input required type="text" placeholder="Card Number" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={19} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <input required type="text" placeholder="MM / YY" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={7} />
+                      <input required type="text" placeholder="CVC" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={4} />
+                    </div>
+                  </div>
+                </div>
 
-                  <button 
-                    type="submit" 
-                    disabled={loading}
-                    className="w-full bg-drxred text-white py-4 font-black uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all flex items-center justify-center gap-4"
-                  >
-                    {loading ? (
-                      <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Authorizing...</>
-                    ) : `Pay ${total.toLocaleString()} LE Now`}
-                  </button>
-                  <button type="button" onClick={() => setStep(1)} className="w-full text-[10px] font-mono text-zinc-600 uppercase hover:text-zinc-300">Back to Shipping</button>
-                </form>
-              )}
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full bg-drxred text-white py-5 font-black uppercase tracking-[0.3em] text-sm hover:bg-white hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-3">
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      {lang === 'ar' ? 'جاري المعالجة...' : 'Processing...'}
+                    </span>
+                  ) : (
+                    lang === 'ar' ? `دفع ${total.toLocaleString()} جنيه` : `Pay ${total.toLocaleString()} LE`
+                  )}
+                </button>
+
+                <p className="text-[9px] font-mono text-zinc-600 text-center uppercase tracking-widest flex items-center justify-center gap-2">
+                  <span>🔒</span> Secure Encrypted Transaction
+                </p>
+              </form>
+              <button type="button" onClick={() => setStep(1)} className="w-full text-[10px] font-mono text-zinc-600 uppercase hover:text-zinc-300 mt-4">Back to Shipping</button>
             </div>
           )}
 
