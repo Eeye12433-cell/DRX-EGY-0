@@ -3,7 +3,7 @@ import { CartItem, ShippingInfo, Order, OrderStatus } from '../types';
 import { validateShippingForm, ShippingFormData } from '../src/lib/validations';
 import { supabase } from '@/integrations/supabase/client';
 
-type PaymentMethod = 'cod' | 'vodafone_cash' | 'instapay';
+type PaymentMethod = 'cod' | 'vodafone_cash' | 'instapay' | 'fawry';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -147,6 +147,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       name: 'InstaPay',
       icon: '🏦',
       desc: lang === 'ar' ? 'حوّل على: drx.egypt@instapay' : 'Transfer to: drx.egypt@instapay'
+    },
+    {
+      id: 'fawry' as PaymentMethod,
+      name: 'Fawry',
+      icon: '🟡',
+      desc: lang === 'ar' ? 'ادفع نقداً في أي فرع فوري بالكود' : 'Pay cash at any Fawry branch with code'
     }
   ];
 
@@ -346,6 +352,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         ? 'قم بالتحويل على حساب انستاباي: drx.egypt@instapay ثم أرسل صورة التحويل على واتساب'
                         : 'Transfer to InstaPay account: drx.egypt@instapay, then send the transfer screenshot via WhatsApp'
                     )}
+                    {paymentMethod === 'fawry' && (
+                      lang === 'ar'
+                        ? 'ستحصل على كود دفع فوري بعد تأكيد الطلب. اذهب لأي فرع فوري واستخدم الكود للدفع خلال 48 ساعة.'
+                        : 'You will receive a Fawry payment code after order confirmation. Visit any Fawry branch and pay within 48 hours.'
+                    )}
                   </p>
                 </div>
               )}
@@ -393,10 +404,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {lang === 'ar' ? 'تم' : 'Order'} <span className="text-drxred">{lang === 'ar' ? 'الطلب بنجاح!' : 'Confirmed!'}</span>
                 </h3>
                 <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
-                  {paymentMethod === 'cod' 
-                    ? (lang === 'ar' ? 'سيتم التواصل معك لتأكيد الطلب' : 'We will contact you to confirm')
-                    : (lang === 'ar' ? 'برجاء إرسال صورة التحويل على واتساب' : 'Please send transfer proof via WhatsApp')
-                  }
+                  {paymentMethod === 'cod' && (lang === 'ar' ? 'سيتم التواصل معك لتأكيد الطلب' : 'We will contact you to confirm')}
+                  {paymentMethod === 'fawry' && (lang === 'ar' ? 'اذهب لأي فرع فوري واستخدم كود الدفع' : 'Visit any Fawry branch and use the payment code')}
+                  {(paymentMethod === 'vodafone_cash' || paymentMethod === 'instapay') && (lang === 'ar' ? 'برجاء إرسال صورة التحويل على واتساب' : 'Please send transfer proof via WhatsApp')}
                 </p>
               </div>
               
