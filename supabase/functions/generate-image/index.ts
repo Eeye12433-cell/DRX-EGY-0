@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,52 @@ serve(async (req) => {
   }
 
   try {
+    // Validate authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify the token and check admin role
+    const { data: claims, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !claims?.user) {
+      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check if user is admin using service role
+    const serviceSupabase = createClient(
+      supabaseUrl,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: roleData } = await serviceSupabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', claims.user.id)
+      .eq('role', 'admin')
+      .single();
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: 'Admin access required' }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { name, description, theme, editPrompt, existingImage } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
@@ -22,7 +69,6 @@ serve(async (req) => {
     let messages: any[];
     
     if (existingImage && editPrompt) {
-      // Edit existing image
       prompt = `Edit this supplement product image: ${editPrompt}. Change the background environment to: ${theme}. Maintain the DRX EGYPT industrial aesthetic. Keep the container visible but modify the requested attributes.`;
       messages = [
         {
@@ -34,7 +80,6 @@ serve(async (req) => {
         }
       ];
     } else {
-      // Generate new image
       prompt = `High-end professional product photography of a premium supplement container. 
 The product is named "${name}". 
 Technical specs: "${description}". 
@@ -79,7 +124,6 @@ Quality: 8k resolution, hyper-realistic, cinematic lighting.`;
 
     const data = await response.json();
     
-    // Extract image from the new response format
     const message = data.choices?.[0]?.message;
     if (message?.images && message.images.length > 0) {
       const imageUrl = message.images[0]?.image_url?.url;
