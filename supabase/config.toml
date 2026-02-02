@@ -14,3 +14,12 @@ verify_jwt = false
 
 [functions.verify-code]
 verify_jwt = false
+
+[functions.track-order]
+verify_jwt = false
+
+[functions.admin-orders]
+verify_jwt = false
+
+[functions.admin-codes]
+verify_jwt = false

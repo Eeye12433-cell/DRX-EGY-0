@@ -1,19 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { Product, Category, VerificationCode, Order, OrderStatus, StripeConfig } from '../types';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Product, Category, VerificationCode, Order, OrderStatus } from '../types';
 import { GOALS } from '../constants';
 import { generateProductImage, editProductImage } from '../services/aiService';
 import { ImageGenerationSkeleton } from './ui/Skeleton';
 import { ErrorState } from './ui/ErrorState';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminPanelProps {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
-  codes: Record<string, VerificationCode>;
-  setCodes: React.Dispatch<React.SetStateAction<Record<string, VerificationCode>>>;
-  orders: Order[];
-  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
-  stripeConfig: StripeConfig;
-  setStripeConfig: React.Dispatch<React.SetStateAction<StripeConfig>>;
   lang: 'ar' | 'en';
 }
 
@@ -26,12 +22,21 @@ const BG_THEMES = [
   { id: 'wood-natural', label: 'Organic Minimalist', prompt: 'natural light wood surface with soft morning light and blurred greenery background' }
 ];
 
-const AdminPanel: React.FC<AdminPanelProps> = ({
-  products, setProducts, codes, setCodes, orders, setOrders, stripeConfig, setStripeConfig, lang
-}) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang }) => {
+  const { user, isAdmin, loading, signIn, signOut } = useAuth();
+  
+  // Auth form state
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'codes' | 'orders' | 'stripe'>('dashboard');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'codes' | 'orders'>('dashboard');
+
+  // Data from backend
+  const [codes, setCodes] = useState<VerificationCode[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Product Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -48,7 +53,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     description_en: '',
     price: 0,
     image: '',
-    imageUrl: '', // ✅ NEW
+    imageUrl: '',
     category: Category.Protein,
     inStock: true,
     isNew: false,
@@ -59,27 +64,101 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
   // Code Management State
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
-  const [editingCodeId, setEditingCodeId] = useState<string | null>(null); // null means adding new
+  const [editingCodeId, setEditingCodeId] = useState<string | null>(null);
   const [codeFormId, setCodeFormId] = useState('');
   const [codeFormUsed, setCodeFormUsed] = useState(false);
   const [codeSearch, setCodeSearch] = useState('');
   const [codeFilter, setCodeFilter] = useState<'all' | 'used' | 'available'>('all');
 
+  // Load admin data from backend
+  const loadAdminData = useCallback(async () => {
+    if (!user || !isAdmin) return;
+    
+    setIsLoadingData(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      
+      if (!token) return;
+
+      // Load codes
+      const { data: codesData } = await supabase.functions.invoke('admin-codes', {
+        body: { action: 'list' }
+      });
+      if (codesData?.codes) {
+        setCodes(codesData.codes.map((c: any) => ({
+          id: c.id,
+          used: c.used,
+          usedAt: c.used_at
+        })));
+      }
+
+      // Load orders
+      const { data: ordersData } = await supabase.functions.invoke('admin-orders', {
+        body: { action: 'list' }
+      });
+      if (ordersData?.orders) {
+        setOrders(ordersData.orders.map((o: any) => ({
+          id: o.id,
+          trackingNumber: o.tracking_number,
+          total: o.total,
+          status: o.status as OrderStatus,
+          createdAt: o.created_at,
+          shippingInfo: {
+            fullName: o.shipping_full_name,
+            phone: o.shipping_phone,
+            email: o.shipping_email,
+            address: o.shipping_address,
+            method: o.shipping_method,
+            city: ''
+          },
+          items: (o.order_items || []).map((item: any) => ({
+            product: {
+              id: item.product_id,
+              name_en: item.product_name,
+              name_ar: item.product_name,
+              price: item.product_price,
+              description_ar: '',
+              description_en: '',
+              image: '',
+              category: Category.Protein,
+              inStock: true,
+              isNew: false,
+              isBestSeller: false,
+              featured: 0,
+              goals: []
+            },
+            quantity: item.quantity
+          }))
+        })));
+      }
+    } catch (err) {
+      console.error('Failed to load admin data:', err);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [user, isAdmin]);
+
+  useEffect(() => {
+    if (user && isAdmin) {
+      loadAdminData();
+    }
+  }, [user, isAdmin, loadAdminData]);
+
   const analytics = useMemo(() => {
     const totalValue = products.reduce((acc, p) => acc + (p.price * (p.inStock ? 1 : 0)), 0);
-    const codesArray = Object.values(codes) as VerificationCode[];
-    const usedCodesCount = codesArray.filter(c => c.used).length;
+    const usedCodesCount = codes.filter(c => c.used).length;
     return {
       totalValue,
       productCount: products.length,
       orderCount: orders.length,
       usedCodesCount,
-      totalCodesCount: codesArray.length
+      totalCodesCount: codes.length
     };
   }, [products, codes, orders]);
 
   const filteredCodes = useMemo(() => {
-    let list = Object.values(codes) as VerificationCode[];
+    let list = codes;
     if (codeSearch) {
       list = list.filter(c => c.id.toLowerCase().includes(codeSearch.toLowerCase()));
     }
@@ -91,10 +170,25 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     return list;
   }, [codes, codeSearch, codeFilter]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'drx_admin_2026') setIsAuthenticated(true);
-    else alert("ACCESS DENIED: INVALID AUTHORIZATION CIPHER");
+    setAuthError(null);
+    setIsSigningIn(true);
+    
+    try {
+      const { error } = await signIn(email, password);
+      if (error) {
+        setAuthError(error.message);
+      }
+    } catch (err: any) {
+      setAuthError(err.message || 'Login failed');
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
   };
 
   const openForm = (product?: Product) => {
@@ -114,7 +208,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         description_en: '',
         price: 0,
         image: '',
-        imageUrl: '', // ✅ NEW
+        imageUrl: '',
         category: Category.Protein,
         inStock: true,
         isNew: true,
@@ -128,7 +222,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsFormOpen(true);
   };
 
-  // Verification Code Actions
+  // Verification Code Actions via Edge Function
   const openCodeModal = (code?: VerificationCode) => {
     if (code) {
       setEditingCodeId(code.id);
@@ -142,34 +236,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsCodeModalOpen(true);
   };
 
-  const saveCode = (e: React.FormEvent) => {
+  const saveCode = async (e: React.FormEvent) => {
     e.preventDefault();
     const newId = codeFormId.trim().toUpperCase();
     if (!newId) return;
 
-    setCodes(prev => {
-      const updated = { ...prev };
-      if (editingCodeId && editingCodeId !== newId) {
-        delete updated[editingCodeId];
+    try {
+      if (editingCodeId) {
+        await supabase.functions.invoke('admin-codes', {
+          body: { action: 'update', codeId: editingCodeId, used: codeFormUsed }
+        });
+      } else {
+        await supabase.functions.invoke('admin-codes', {
+          body: { action: 'create', codeId: newId, used: codeFormUsed }
+        });
       }
-      updated[newId] = {
-        id: newId,
-        used: codeFormUsed,
-        usedAt: codeFormUsed ? (prev[editingCodeId || '']?.usedAt || new Date().toISOString()) : undefined
-      };
-      return updated;
-    });
-
-    setIsCodeModalOpen(false);
+      await loadAdminData();
+      setIsCodeModalOpen(false);
+    } catch (err) {
+      console.error('Failed to save code:', err);
+    }
   };
 
-  const deleteCode = (id: string) => {
+  const deleteCode = async (id: string) => {
     if (window.confirm(`ERASE NODE ${id} FROM REGISTRY?`)) {
-      setCodes(prev => {
-        const updated = { ...prev };
-        delete updated[id];
-        return updated;
-      });
+      try {
+        await supabase.functions.invoke('admin-codes', {
+          body: { action: 'delete', codeId: id }
+        });
+        await loadAdminData();
+      } catch (err) {
+        console.error('Failed to delete code:', err);
+      }
     }
   };
 
@@ -217,30 +315,99 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     setIsFormOpen(false);
   };
 
-  const updateOrderStatus = (id: string, status: OrderStatus) => {
-    setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
+  const updateOrderStatus = async (id: string, status: OrderStatus) => {
+    try {
+      await supabase.functions.invoke('admin-orders', {
+        body: { action: 'update_status', orderId: id, status }
+      });
+      setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
+    } catch (err) {
+      console.error('Failed to update order status:', err);
+    }
   };
 
-  if (!isAuthenticated) {
+  // Loading state
+  if (loading) {
+    return (
+      <div className="max-w-md mx-auto py-32 px-4">
+        <div className="card-ui p-10 shadow-2xl text-center">
+          <div className="text-4xl font-black font-oswald uppercase mb-4">Loading...</div>
+          <div className="animate-spin w-8 h-8 border-2 border-drxred border-t-transparent rounded-full mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated
+  if (!user) {
     return (
       <div className="max-w-md mx-auto py-32 px-4">
         <div className="card-ui p-10 shadow-2xl">
           <h2 className="text-4xl font-black font-oswald uppercase text-center mb-10">
-            Command <span className="text-drxred">Access</span>
+            Admin <span className="text-drxred">Access</span>
           </h2>
           <form onSubmit={handleLogin} className="space-y-6">
-            <input
-              type="password"
-              placeholder="ENTER ADMIN KEY"
-              className="w-full bg-transparent border-b border-ui p-4 font-mono text-center tracking-[0.5em] outline-none focus:border-drxred transition-all"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              autoFocus
-            />
-            <button className="btn-drx w-full bg-drxred text-white py-5 font-bold uppercase tracking-widest text-xs">
-              Authorize Session
+            <div className="space-y-2">
+              <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Email</label>
+              <input
+                type="email"
+                placeholder="admin@example.com"
+                className="w-full bg-transparent border-b border-ui p-4 font-mono text-sm outline-none focus:border-drxred transition-all"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Password</label>
+              <input
+                type="password"
+                placeholder="Enter password"
+                className="w-full bg-transparent border-b border-ui p-4 font-mono text-sm outline-none focus:border-drxred transition-all"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            {authError && (
+              <div className="text-drxred text-sm font-mono text-center p-3 bg-drxred/10 border border-drxred/20 rounded">
+                {authError}
+              </div>
+            )}
+            <button 
+              type="submit"
+              disabled={isSigningIn}
+              className="btn-drx w-full bg-drxred text-white py-5 font-bold uppercase tracking-widest text-xs disabled:opacity-50"
+            >
+              {isSigningIn ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+          <p className="text-center text-muted text-[10px] font-mono mt-6 uppercase tracking-widest">
+            Admin accounts must be assigned the admin role in the database
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated but not admin
+  if (!isAdmin) {
+    return (
+      <div className="max-w-md mx-auto py-32 px-4">
+        <div className="card-ui p-10 shadow-2xl text-center">
+          <div className="text-6xl mb-6">🚫</div>
+          <h2 className="text-4xl font-black font-oswald uppercase mb-4">
+            Access <span className="text-drxred">Denied</span>
+          </h2>
+          <p className="text-muted text-sm font-mono mb-8">
+            Your account does not have administrator privileges.
+          </p>
+          <button 
+            onClick={handleLogout}
+            className="btn-drx bg-zinc-800 text-white px-8 py-4 font-bold uppercase tracking-widest text-xs hover:bg-drxred transition-all"
+          >
+            Sign Out
+          </button>
         </div>
       </div>
     );
@@ -254,23 +421,38 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
             System <span className="text-drxred">Management</span>
           </h1>
           <p className="text-[10px] font-mono text-muted mt-2 uppercase tracking-[0.4em]">
-            Administrator Uplink Established // DRX-OS v2.6.4
+            Administrator Uplink Established // {user.email}
           </p>
         </div>
-        <div className="flex bg-bg-card p-1 border border-ui rounded-sm overflow-x-auto custom-scrollbar">
-          {(['dashboard', 'products', 'codes', 'orders', 'stripe'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 text-[10px] font-mono font-bold uppercase tracking-mega whitespace-nowrap transition-all ${
-                activeTab === tab ? 'bg-drxred text-white shadow-lg' : 'text-muted hover:text-drxred'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+        <div className="flex items-center gap-4">
+          <div className="flex bg-bg-card p-1 border border-ui rounded-sm overflow-x-auto custom-scrollbar">
+            {(['dashboard', 'products', 'codes', 'orders'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-6 py-3 text-[10px] font-mono font-bold uppercase tracking-mega whitespace-nowrap transition-all ${
+                  activeTab === tab ? 'bg-drxred text-white shadow-lg' : 'text-muted hover:text-drxred'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-3 text-[10px] font-mono font-bold uppercase tracking-mega text-muted hover:text-drxred transition-all"
+          >
+            Sign Out
+          </button>
         </div>
       </div>
+
+      {isLoadingData && (
+        <div className="text-center py-8">
+          <div className="animate-spin w-8 h-8 border-2 border-drxred border-t-transparent rounded-full mx-auto"></div>
+          <p className="text-muted text-sm font-mono mt-4">Loading data...</p>
+        </div>
+      )}
 
       {activeTab === 'dashboard' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-700">
@@ -321,11 +503,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
               <div key={p.id} className="card-ui group relative flex flex-col">
                 <div className="aspect-square bg-black overflow-hidden relative">
                   <img
-                    src={(p.imageUrl || p.image) as string} // ✅ prefers URL
+                    src={(p.imageUrl || p.image) as string}
                     className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
                     alt=""
                     onError={(e) => {
-                      // fallback to image if url fails
                       const target = e.currentTarget;
                       if (p.image && target.src !== p.image) target.src = p.image;
                     }}
@@ -372,7 +553,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                 <select
                   className="bg-bg-primary border border-ui p-3 text-[10px] font-mono uppercase font-bold outline-none rounded-sm min-w-[150px]"
                   value={codeFilter}
-                  onChange={(e) => setCodeFilter(e.target.value as any)}
+                  onChange={(e) => setCodeFilter(e.target.value as 'all' | 'used' | 'available')}
                 >
                   <option value="all">View All Nodes</option>
                   <option value="used">Compromised (Used)</option>
@@ -505,48 +686,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         </div>
       )}
 
-      {activeTab === 'stripe' && (
-        <div className="max-w-3xl animate-in fade-in duration-500">
-          <div className="bg-bg-card border border-ui p-12 rounded-sm shadow-xl space-y-10">
-            <div className="flex justify-between items-center border-b border-ui pb-8">
-              <h3 className="text-3xl font-oswald uppercase tracking-tight">
-                Stripe <span className="text-drxred">Node Config</span>
-              </h3>
-              <div className={`w-4 h-4 rounded-full ${stripeConfig.enabled ? 'bg-green-500 shadow-[0_0_20px_#22c55e]' : 'bg-zinc-800'}`} />
-            </div>
-            <div className="space-y-8">
-              <div className="flex items-center justify-between p-6 bg-bg-primary border border-ui rounded-sm">
-                <span className="text-[11px] font-mono font-bold uppercase text-muted tracking-mega">
-                  Gateway Communication
-                </span>
-                <button
-                  onClick={() => setStripeConfig({ ...stripeConfig, enabled: !stripeConfig.enabled })}
-                  className={`px-8 py-3 text-[10px] font-mono uppercase font-black tracking-mega transition-all rounded-sm ${
-                    stripeConfig.enabled ? 'bg-drxred text-white shadow-lg' : 'bg-zinc-900 text-zinc-600'
-                  }`}
-                >
-                  {stripeConfig.enabled ? 'System Online' : 'System Offline'}
-                </button>
-              </div>
-              <div className="space-y-3">
-                <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">
-                  Stripe Public Cipher Key
-                </label>
-                <input
-                  type="text"
-                  className="w-full bg-bg-primary border border-ui p-5 font-mono text-sm outline-none focus:border-drxred tracking-widest rounded-sm"
-                  value={stripeConfig.publicKey}
-                  onChange={e => setStripeConfig({ ...stripeConfig, publicKey: e.target.value })}
-                />
-              </div>
-            </div>
-            <button className="bg-white text-black px-12 py-5 text-[10px] font-black uppercase tracking-mega hover:bg-drxred hover:text-white transition-all shadow-xl rounded-sm">
-              Save Encryption Config
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Verification Code Form Modal */}
       {isCodeModalOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
@@ -564,6 +703,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   value={codeFormId}
                   onChange={e => setCodeFormId(e.target.value)}
                   placeholder="DRX-EGY-XXX"
+                  disabled={!!editingCodeId}
                 />
               </div>
               <div className="flex items-center gap-4 p-4 bg-black border border-ui">
@@ -619,7 +759,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     </button>
                   </div>
 
-                  {/* Image Error Display */}
                   {imageError && !isGeneratingImage && (
                     <ErrorState
                       title="Image Generation Failed"
@@ -629,7 +768,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     />
                   )}
 
-                  {/* Preview */}
                   <div className="aspect-square w-full bg-black border border-ui flex items-center justify-center relative overflow-hidden group shadow-inner">
                     {isGeneratingImage ? (
                       <ImageGenerationSkeleton />
@@ -645,7 +783,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     ))}
                   </div>
 
-                  {/* ✅ NEW: External URL field */}
                   <div className="p-6 bg-black/40 border border-ui space-y-3 rounded-sm">
                     <label className="text-[10px] font-mono text-drxred uppercase font-black tracking-mega block">
                       External Image URL (optional)
@@ -750,51 +887,122 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">Valuation [LE]</label>
-                    <input
+                    <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">Technical Spec [EN]</label>
+                    <textarea
                       required
-                      type="number"
-                      step="1"
-                      className="w-full bg-black/40 border border-ui p-4 text-xl font-oswald font-bold outline-none focus:border-drxred rounded-sm"
-                      value={Number(formData.price || 0)}
-                      onChange={e => setFormData({ ...formData, price: +e.target.value })}
+                      rows={4}
+                      className="w-full bg-black/40 border border-ui p-4 text-sm outline-none focus:border-drxred resize-none rounded-sm"
+                      value={formData.description_en || ''}
+                      onChange={e => setFormData({ ...formData, description_en: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">Sector Classification</label>
-                    <select
-                      className="w-full bg-black/40 border border-ui p-4 text-[11px] font-bold uppercase outline-none focus:border-drxred h-[62px] rounded-sm appearance-none"
-                      value={formData.category as any}
-                      onChange={e => setFormData({ ...formData, category: e.target.value as Category })}
-                    >
-                      {Object.values(Category).map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
+                    <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">Technical Spec [AR]</label>
+                    <textarea
+                      required
+                      rows={4}
+                      className="w-full bg-black/40 border border-ui p-4 text-right text-sm outline-none focus:border-drxred resize-none rounded-sm"
+                      value={formData.description_ar || ''}
+                      onChange={e => setFormData({ ...formData, description_ar: e.target.value })}
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">Technical Specifications [EN]</label>
-                  <textarea
-                    rows={4}
-                    className="w-full bg-black/40 border border-ui p-5 text-xs font-mono outline-none focus:border-drxred resize-none leading-relaxed tracking-tight rounded-sm"
-                    value={formData.description_en || ''}
-                    onChange={e => setFormData({ ...formData, description_en: e.target.value })}
-                  />
+                <div className="grid grid-cols-3 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">Value (LE)</label>
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      className="w-full bg-black/40 border border-ui p-4 text-lg font-oswald font-bold outline-none focus:border-drxred rounded-sm"
+                      value={formData.price || 0}
+                      onChange={e => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">Matrix Category</label>
+                    <select
+                      className="w-full bg-black/40 border border-ui p-4 text-sm outline-none focus:border-drxred h-[58px] rounded-sm"
+                      value={formData.category}
+                      onChange={e => setFormData({ ...formData, category: e.target.value as Category })}
+                    >
+                      {Object.values(Category).map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">Display Order</label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-full bg-black/40 border border-ui p-4 text-lg font-oswald font-bold outline-none focus:border-drxred rounded-sm"
+                      value={formData.featured || 1}
+                      onChange={e => setFormData({ ...formData, featured: parseInt(e.target.value) })}
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">Technical Specifications [AR]</label>
-                  <textarea
-                    rows={4}
-                    className="w-full bg-black/40 border border-ui p-5 text-sm text-right outline-none focus:border-drxred resize-none leading-relaxed rounded-sm"
-                    value={formData.description_ar || ''}
-                    onChange={e => setFormData({ ...formData, description_ar: e.target.value })}
-                  />
+                <div className="grid grid-cols-3 gap-8">
+                  <label className="flex items-center gap-4 p-5 bg-black/40 border border-ui cursor-pointer hover:border-drxred transition-all group rounded-sm">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 accent-drxred"
+                      checked={formData.inStock}
+                      onChange={e => setFormData({ ...formData, inStock: e.target.checked })}
+                    />
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-mega text-muted group-hover:text-white transition-colors">In Stock</span>
+                  </label>
+                  <label className="flex items-center gap-4 p-5 bg-black/40 border border-ui cursor-pointer hover:border-drxred transition-all group rounded-sm">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 accent-drxred"
+                      checked={formData.isNew}
+                      onChange={e => setFormData({ ...formData, isNew: e.target.checked })}
+                    />
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-mega text-muted group-hover:text-white transition-colors">New Arrival</span>
+                  </label>
+                  <label className="flex items-center gap-4 p-5 bg-black/40 border border-ui cursor-pointer hover:border-drxred transition-all group rounded-sm">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 accent-drxred"
+                      checked={formData.isBestSeller}
+                      onChange={e => setFormData({ ...formData, isBestSeller: e.target.checked })}
+                    />
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-mega text-muted group-hover:text-white transition-colors">Best Seller</span>
+                  </label>
                 </div>
 
-                {/* NOTE: باقي الحقول اللي كانت عندك (inStock / isNew / ... إلخ)
-                    انت ما باعتهاش في الجزء ده من الكود، فسابتها زي ما هي.
-                    لو عندك بقيتهم في نسختك الكاملة، ابعتهم وأنا أدمج حقل URL بينهم بدون ما ألمس أي حاجة. */}
+                <div className="space-y-3 p-6 bg-black/30 border border-ui rounded-sm">
+                  <label className="text-[10px] font-mono text-drxred uppercase font-black tracking-mega block">Fitness Objective Tags</label>
+                  <div className="flex flex-wrap gap-3">
+                    {GOALS.map(goal => (
+                      <label
+                        key={goal}
+                        className={`px-5 py-3 border cursor-pointer text-[10px] font-mono uppercase font-bold tracking-mega transition-all rounded-sm ${
+                          formData.goals?.includes(goal) ? 'bg-drxred border-drxred text-white' : 'border-ui text-muted hover:text-white hover:border-white/30'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={formData.goals?.includes(goal)}
+                          onChange={e => {
+                            const currentGoals = formData.goals || [];
+                            setFormData({
+                              ...formData,
+                              goals: e.target.checked
+                                ? [...currentGoals, goal]
+                                : currentGoals.filter(g => g !== goal)
+                            });
+                          }}
+                        />
+                        {goal}
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
             </form>
           </div>
