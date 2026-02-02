@@ -2,18 +2,19 @@ import React, { useLayoutEffect, useMemo, useRef, useEffect, useState } from "re
 import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
 import drxLogo from "@/assets/drx-logo.jpeg";
+
 interface HomeProps {
   lang: "ar" | "en";
 }
-const Home: React.FC<HomeProps> = ({
-  lang
-}) => {
+
+const Home: React.FC<HomeProps> = ({ lang }) => {
   const navigate = useNavigate();
   const isRTL = lang === "ar";
   const rootRef = useRef<HTMLDivElement | null>(null);
   const heroRef = useRef<HTMLElement | null>(null);
   const statsRef = useRef<HTMLDivElement | null>(null);
   const [countersAnimated, setCountersAnimated] = useState(false);
+
   const copy = useMemo(() => {
     const ar = {
       heroBadge: "الموزّع الرسمي المعتمد",
@@ -103,48 +104,42 @@ const Home: React.FC<HomeProps> = ({
   }, [isRTL]);
 
   // Animated counter component
-  const AnimatedCounter = ({
-    value,
-    suffix = "",
-    prefix = ""
-  }: {
-    value: number | string;
-    suffix?: string;
-    prefix?: string;
-  }) => {
+  const AnimatedCounter = ({ value, suffix = "", prefix = "" }: { value: number | string; suffix?: string; prefix?: string }) => {
     const counterRef = useRef<HTMLSpanElement>(null);
+    
     useEffect(() => {
       if (!countersAnimated || !counterRef.current) return;
       if (typeof value === "string") return;
-      gsap.fromTo(counterRef.current, {
-        textContent: 0
-      }, {
-        textContent: value,
-        duration: 2,
-        ease: "power2.out",
-        snap: {
-          textContent: 1
-        },
-        onUpdate: function () {
-          if (counterRef.current) {
-            counterRef.current.textContent = prefix + Math.round(Number(counterRef.current.textContent || 0)) + suffix;
+      
+      gsap.fromTo(
+        counterRef.current,
+        { textContent: 0 },
+        {
+          textContent: value,
+          duration: 2,
+          ease: "power2.out",
+          snap: { textContent: 1 },
+          onUpdate: function() {
+            if (counterRef.current) {
+              counterRef.current.textContent = prefix + Math.round(Number(counterRef.current.textContent || 0)) + suffix;
+            }
           }
         }
-      });
+      );
     }, [countersAnimated, value, suffix, prefix]);
+
     return <span ref={counterRef}>{prefix}{typeof value === "string" ? value : 0}{suffix}</span>;
   };
 
   // Main GSAP animations - simplified for reliability
   useLayoutEffect(() => {
     if (!rootRef.current) return;
+
     const ctx = gsap.context(() => {
       // Create master timeline with slight delay to ensure DOM is ready
-      const tl = gsap.timeline({
-        defaults: {
-          ease: "power3.out"
-        },
-        delay: 0.1
+      const tl = gsap.timeline({ 
+        defaults: { ease: "power3.out" },
+        delay: 0.1 
       });
 
       // Set initial visible state first, then animate
@@ -153,72 +148,51 @@ const Home: React.FC<HomeProps> = ({
       });
 
       // Hero scanline effect
-      tl.fromTo(".hero-scanline", {
-        scaleX: 0
-      }, {
-        scaleX: 1,
-        duration: 0.8
-      });
+      tl.fromTo(
+        ".hero-scanline",
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.8 }
+      );
 
       // Hero content stagger
-      tl.fromTo(".hero-badge", {
-        opacity: 0,
-        y: -20,
-        scale: 0.9
-      }, {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.5
-      }, "-=0.3");
+      tl.fromTo(
+        ".hero-badge",
+        { opacity: 0, y: -20, scale: 0.9 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.5 },
+        "-=0.3"
+      );
 
       // Title split animation
-      tl.fromTo(".hero-title-line", {
-        opacity: 0,
-        y: 60,
-        skewY: 3
-      }, {
-        opacity: 1,
-        y: 0,
-        skewY: 0,
-        duration: 0.7,
-        stagger: 0.15
-      }, "-=0.2");
+      tl.fromTo(
+        ".hero-title-line",
+        { opacity: 0, y: 60, skewY: 3 },
+        { opacity: 1, y: 0, skewY: 0, duration: 0.7, stagger: 0.15 },
+        "-=0.2"
+      );
 
       // Subtitle
-      tl.fromTo(".hero-subtitle", {
-        opacity: 0,
-        y: 20
-      }, {
-        opacity: 1,
-        y: 0,
-        duration: 0.5
-      }, "-=0.3");
+      tl.fromTo(
+        ".hero-subtitle",
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.5 },
+        "-=0.3"
+      );
 
       // CTA buttons
-      tl.fromTo(".hero-cta", {
-        opacity: 0,
-        y: 20,
-        scale: 0.95
-      }, {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.4,
-        stagger: 0.1
-      }, "-=0.2");
+      tl.fromTo(
+        ".hero-cta",
+        { opacity: 0, y: 20, scale: 0.95 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.4, stagger: 0.1 },
+        "-=0.2"
+      );
 
       // Stats cards with 3D flip
-      tl.fromTo(".hero-stat", {
-        opacity: 0,
-        rotateY: -30,
-        transformOrigin: "left center"
-      }, {
-        opacity: 1,
-        rotateY: 0,
-        duration: 0.6,
-        stagger: 0.1
-      }, "-=0.3");
+      tl.fromTo(
+        ".hero-stat",
+        { opacity: 0, rotateY: -30, transformOrigin: "left center" },
+        { opacity: 1, rotateY: 0, duration: 0.6, stagger: 0.1 },
+        "-=0.3"
+      );
 
       // Floating particles - simpler animation
       gsap.to(".particle", {
@@ -242,28 +216,20 @@ const Home: React.FC<HomeProps> = ({
 
       // Cards hover effect setup
       const cards = gsap.utils.toArray<HTMLElement>(".hover-card");
-      cards.forEach(card => {
+      cards.forEach((card) => {
         card.addEventListener("mouseenter", () => {
-          gsap.to(card, {
-            scale: 1.02,
-            y: -5,
-            duration: 0.3,
-            ease: "power2.out"
-          });
+          gsap.to(card, { scale: 1.02, y: -5, duration: 0.3, ease: "power2.out" });
         });
         card.addEventListener("mouseleave", () => {
-          gsap.to(card, {
-            scale: 1,
-            y: 0,
-            duration: 0.3,
-            ease: "power2.out"
-          });
+          gsap.to(card, { scale: 1, y: 0, duration: 0.3, ease: "power2.out" });
         });
       });
 
       // Trigger counter animation
       setTimeout(() => setCountersAnimated(true), 1200);
+
     }, rootRef);
+
     return () => ctx.revert();
   }, [lang]);
 
@@ -275,52 +241,67 @@ const Home: React.FC<HomeProps> = ({
       rafId = requestAnimationFrame(() => {
         const xPos = (e.clientX / window.innerWidth - 0.5) * 15;
         const yPos = (e.clientY / window.innerHeight - 0.5) * 15;
-        gsap.to(".parallax-layer", {
-          x: xPos,
-          y: yPos,
-          duration: 0.8,
-          ease: "power2.out"
-        });
+        gsap.to(".parallax-layer", { x: xPos, y: yPos, duration: 0.8, ease: "power2.out" });
       });
     };
+
     window.addEventListener("mousemove", handleMouseMove);
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       cancelAnimationFrame(rafId);
     };
   }, []);
-  return <div ref={rootRef} dir={isRTL ? "rtl" : "ltr"} className="overflow-hidden">
+
+  return (
+    <div ref={rootRef} dir={isRTL ? "rtl" : "ltr"} className="overflow-hidden">
       {/* Floating Particles */}
       <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
-        {[...Array(8)].map((_, i) => <div key={i} className="particle absolute w-1 h-1 rounded-full bg-primary/30" style={{
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`
-      }} />)}
+        {[...Array(8)].map((_, i) => (
+          <div
+            key={i}
+            className="particle absolute w-1 h-1 rounded-full bg-primary/30"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+          />
+        ))}
       </div>
 
       {/* HERO SECTION */}
-      <section ref={heroRef} className="-mt-24 w-screen relative left-1/2 -translate-x-1/2 min-h-screen flex items-center overflow-hidden">
+      <section
+        ref={heroRef}
+        className="-mt-24 w-screen relative left-1/2 -translate-x-1/2 min-h-screen flex items-center overflow-hidden"
+      >
         {/* Animated Grid Background */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: `
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `
                 linear-gradient(hsl(var(--primary) / 0.3) 1px, transparent 1px),
                 linear-gradient(90deg, hsl(var(--primary) / 0.3) 1px, transparent 1px)
               `,
-          backgroundSize: "50px 50px"
-        }} />
+              backgroundSize: "50px 50px",
+            }}
+          />
         </div>
 
         {/* Hero Background Image with Parallax */}
         <div className="absolute inset-0 z-0">
-          <img src={drxLogo} alt="DRX Egypt" className="hero-bg-image w-full h-[120%] object-cover will-change-transform" style={{
-          objectPosition: "center 35%"
-        }} loading="eager" decoding="async" />
+          <img
+            src={drxLogo}
+            alt="DRX Egypt"
+            className="hero-bg-image w-full h-[120%] object-cover will-change-transform"
+            style={{ objectPosition: "center 35%" }}
+            loading="eager"
+            decoding="async"
+          />
           {/* Multiple gradient overlays for depth */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
           {/* Animated vignette */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)] opacity-100 mx-0" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)]" />
         </div>
 
         {/* Scanline Effect */}
@@ -333,9 +314,9 @@ const Home: React.FC<HomeProps> = ({
         <div className="absolute bottom-8 right-8 w-16 h-16 border-r-2 border-b-2 border-primary/40 z-20" />
 
         {/* Main Content */}
-        <div className="container relative z-20 mx-auto px-0 py-0 mr-[100px]">
-          <div className="">
-            <div className="max-w-4xl w-full parallax-layer shadow-md">
+        <div className="container relative z-20 mx-auto px-6 py-20">
+          <div className={`flex ${isRTL ? "justify-end" : "justify-start"}`}>
+            <div className="max-w-4xl w-full parallax-layer">
               {/* Badge - visible by default, animated after */}
               <div className="hero-badge inline-flex items-center gap-3 mb-8 opacity-100">
                 <span className="relative flex h-3 w-3">
@@ -352,9 +333,7 @@ const Home: React.FC<HomeProps> = ({
                 <span className="hero-title-line block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black font-oswald text-white uppercase leading-[0.9] tracking-tight opacity-100">
                   {copy.heroTitleTop}
                 </span>
-                <span className="hero-title-line block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black font-oswald uppercase leading-[0.9] tracking-tight glow-pulse opacity-100" style={{
-                color: "hsl(var(--primary))"
-              }}>
+                <span className="hero-title-line block text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black font-oswald uppercase leading-[0.9] tracking-tight glow-pulse opacity-100" style={{ color: "hsl(var(--primary))" }}>
                   {copy.heroTitleBottom}
                 </span>
               </h1>
@@ -366,7 +345,10 @@ const Home: React.FC<HomeProps> = ({
 
               {/* CTA Buttons */}
               <div className="flex gap-4 flex-wrap mb-12">
-                <button className="hero-cta group relative bg-primary text-white px-10 py-5 font-bold uppercase tracking-widest text-sm rounded-xl overflow-hidden transition-all hover:shadow-[0_0_40px_hsl(var(--primary)/0.5)]" onClick={() => navigate("/shop")}>
+                <button
+                  className="hero-cta group relative bg-primary text-white px-10 py-5 font-bold uppercase tracking-widest text-sm rounded-xl overflow-hidden transition-all hover:shadow-[0_0_40px_hsl(var(--primary)/0.5)]"
+                  onClick={() => navigate("/shop")}
+                >
                   <span className="relative z-10 flex items-center gap-2">
                     {copy.heroBtnShop}
                     <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -376,7 +358,10 @@ const Home: React.FC<HomeProps> = ({
                   <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
 
-                <button className="hero-cta group bg-white/10 backdrop-blur-sm text-white px-10 py-5 font-bold uppercase tracking-widest text-sm rounded-xl border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all" onClick={() => navigate("/shop/new")}>
+                <button
+                  className="hero-cta group bg-white/10 backdrop-blur-sm text-white px-10 py-5 font-bold uppercase tracking-widest text-sm rounded-xl border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all"
+                  onClick={() => navigate("/shop/new")}
+                >
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                     {copy.heroBtnNew}
@@ -386,34 +371,28 @@ const Home: React.FC<HomeProps> = ({
 
               {/* Stats Grid */}
               <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[{
-                v: copy.statYears,
-                l: copy.statYearsLabel,
-                suffix: "+",
-                isNum: true
-              }, {
-                v: copy.statGmp,
-                l: copy.statGmpLabel,
-                suffix: "",
-                isNum: false
-              }, {
-                v: copy.statAuth,
-                l: copy.statAuthLabel,
-                suffix: "%",
-                isNum: true
-              }, {
-                v: copy.statClients,
-                l: copy.statClientsLabel,
-                suffix: "K+",
-                isNum: true
-              }].map((s, idx) => <div key={idx} className="hero-stat group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 text-center hover:border-primary/50 hover:bg-white/10 transition-all cursor-default">
+                {[
+                  { v: copy.statYears, l: copy.statYearsLabel, suffix: "+", isNum: true },
+                  { v: copy.statGmp, l: copy.statGmpLabel, suffix: "", isNum: false },
+                  { v: copy.statAuth, l: copy.statAuthLabel, suffix: "%", isNum: true },
+                  { v: copy.statClients, l: copy.statClientsLabel, suffix: "K+", isNum: true },
+                ].map((s, idx) => (
+                  <div
+                    key={idx}
+                    className="hero-stat group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 text-center hover:border-primary/50 hover:bg-white/10 transition-all cursor-default"
+                  >
                     <div className="text-white font-oswald text-3xl md:text-4xl font-bold group-hover:text-primary transition-colors">
-                      {s.isNum ? <AnimatedCounter value={s.v as number} suffix={s.suffix} /> : s.v}
+                      {s.isNum ? (
+                        <AnimatedCounter value={s.v as number} suffix={s.suffix} />
+                      ) : (
+                        s.v
+                      )}
                     </div>
                     <div className="text-white/60 text-xs font-mono uppercase tracking-wider mt-2">
                       {s.l}
                     </div>
-                  </div>)}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -428,7 +407,7 @@ const Home: React.FC<HomeProps> = ({
       </section>
 
       {/* WHY CHOOSE SECTION */}
-      <section className="reveal-section container mx-auto px-6 py-24 my-[99px]">
+      <section className="reveal-section container mx-auto px-6 py-24">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="inline-block px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-primary text-xs font-mono uppercase tracking-widest mb-4">
             {isRTL ? "مميزاتنا" : "Our Features"}
@@ -442,22 +421,15 @@ const Home: React.FC<HomeProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[{
-          title: copy.why1Title,
-          desc: copy.why1Desc,
-          icon: "⚡",
-          gradient: "from-yellow-500/20 to-orange-500/20"
-        }, {
-          title: copy.why2Title,
-          desc: copy.why2Desc,
-          icon: "✅",
-          gradient: "from-green-500/20 to-emerald-500/20"
-        }, {
-          title: copy.why3Title,
-          desc: copy.why3Desc,
-          icon: "🏅",
-          gradient: "from-primary/20 to-rose-500/20"
-        }].map((c, idx) => <div key={idx} className="hover-card group relative bg-card border border-border rounded-3xl p-8 overflow-hidden transition-all hover:border-primary/50">
+          {[
+            { title: copy.why1Title, desc: copy.why1Desc, icon: "⚡", gradient: "from-yellow-500/20 to-orange-500/20" },
+            { title: copy.why2Title, desc: copy.why2Desc, icon: "✅", gradient: "from-green-500/20 to-emerald-500/20" },
+            { title: copy.why3Title, desc: copy.why3Desc, icon: "🏅", gradient: "from-primary/20 to-rose-500/20" },
+          ].map((c, idx) => (
+            <div
+              key={idx}
+              className="hover-card group relative bg-card border border-border rounded-3xl p-8 overflow-hidden transition-all hover:border-primary/50"
+            >
               {/* Gradient background on hover */}
               <div className={`absolute inset-0 bg-gradient-to-br ${c.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
               
@@ -475,7 +447,8 @@ const Home: React.FC<HomeProps> = ({
 
               {/* Corner accent */}
               <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-primary/10 to-transparent rounded-tl-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>)}
+            </div>
+          ))}
         </div>
       </section>
 
@@ -483,9 +456,9 @@ const Home: React.FC<HomeProps> = ({
       <section className="reveal-section relative py-24 overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-[0.02]" style={{
-        backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--primary)) 1px, transparent 0)`,
-        backgroundSize: "40px 40px"
-      }} />
+          backgroundImage: `radial-gradient(circle at 1px 1px, hsl(var(--primary)) 1px, transparent 0)`,
+          backgroundSize: "40px 40px",
+        }} />
 
         <div className="container mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -502,27 +475,16 @@ const Home: React.FC<HomeProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[{
-            text: copy.t1,
-            name: copy.t1Name,
-            role: copy.t1Role,
-            initials: "MS"
-          }, {
-            text: copy.t2,
-            name: copy.t2Name,
-            role: copy.t2Role,
-            initials: "KM"
-          }, {
-            text: copy.t3,
-            name: copy.t3Name,
-            role: copy.t3Role,
-            initials: "DA"
-          }, {
-            text: copy.t4,
-            name: copy.t4Name,
-            role: copy.t4Role,
-            initials: "AF"
-          }].map((t, idx) => <div key={idx} className="hover-card group relative border border-border rounded-3xl p-8 overflow-hidden hover:border-primary/50 transition-all bg-zinc-50/[0.14]">
+            {[
+              { text: copy.t1, name: copy.t1Name, role: copy.t1Role, initials: "MS" },
+              { text: copy.t2, name: copy.t2Name, role: copy.t2Role, initials: "KM" },
+              { text: copy.t3, name: copy.t3Name, role: copy.t3Role, initials: "DA" },
+              { text: copy.t4, name: copy.t4Name, role: copy.t4Role, initials: "AF" },
+            ].map((t, idx) => (
+              <div
+                key={idx}
+                className="hover-card group relative bg-card border border-border rounded-3xl p-8 overflow-hidden hover:border-primary/50 transition-all"
+              >
                 {/* Top accent line */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-60" />
 
@@ -535,9 +497,11 @@ const Home: React.FC<HomeProps> = ({
                   <div className="flex-1">
                     {/* Stars */}
                     <div className="flex gap-1 text-primary mb-4">
-                      {[...Array(5)].map((_, i) => <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                      {[...Array(5)].map((_, i) => (
+                        <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>)}
+                        </svg>
+                      ))}
                     </div>
 
                     {/* Quote */}
@@ -557,7 +521,8 @@ const Home: React.FC<HomeProps> = ({
                     </div>
                   </div>
                 </div>
-              </div>)}
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -578,7 +543,10 @@ const Home: React.FC<HomeProps> = ({
             <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
               {copy.ctaSub}
             </p>
-            <button className="group bg-primary text-white px-12 py-5 font-bold uppercase tracking-widest text-sm rounded-xl hover:shadow-[0_0_50px_hsl(var(--primary)/0.5)] transition-all" onClick={() => navigate("/shop")}>
+            <button
+              className="group bg-primary text-white px-12 py-5 font-bold uppercase tracking-widest text-sm rounded-xl hover:shadow-[0_0_50px_hsl(var(--primary)/0.5)] transition-all"
+              onClick={() => navigate("/shop")}
+            >
               <span className="flex items-center gap-3">
                 {copy.ctaBtn}
                 <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -592,6 +560,8 @@ const Home: React.FC<HomeProps> = ({
 
       {/* Spacer */}
       <div className="h-8" />
-    </div>;
+    </div>
+  );
 };
+
 export default Home;
