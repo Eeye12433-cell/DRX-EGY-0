@@ -320,7 +320,7 @@ const Home: React.FC<HomeProps> = ({
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
           {/* Animated vignette */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)] opacity-0" />
         </div>
 
         {/* Scanline Effect */}
