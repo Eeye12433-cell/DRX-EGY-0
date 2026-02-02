@@ -320,7 +320,7 @@ const Home: React.FC<HomeProps> = ({
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
           {/* Animated vignette */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)] opacity-0" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)] opacity-100 mx-0" />
         </div>
 
         {/* Scanline Effect */}
@@ -428,7 +428,7 @@ const Home: React.FC<HomeProps> = ({
       </section>
 
       {/* WHY CHOOSE SECTION */}
-      <section className="reveal-section container mx-auto px-6 py-24">
+      <section className="reveal-section container mx-auto px-6 py-24 my-[99px]">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="inline-block px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-primary text-xs font-mono uppercase tracking-widest mb-4">
             {isRTL ? "مميزاتنا" : "Our Features"}
@@ -522,7 +522,7 @@ const Home: React.FC<HomeProps> = ({
             name: copy.t4Name,
             role: copy.t4Role,
             initials: "AF"
-          }].map((t, idx) => <div key={idx} className="hover-card group relative bg-card border border-border rounded-3xl p-8 overflow-hidden hover:border-primary/50 transition-all">
+          }].map((t, idx) => <div key={idx} className="hover-card group relative border border-border rounded-3xl p-8 overflow-hidden hover:border-primary/50 transition-all bg-zinc-50/[0.14]">
                 {/* Top accent line */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-60" />
 
