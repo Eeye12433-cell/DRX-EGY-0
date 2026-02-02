@@ -333,7 +333,7 @@ const Home: React.FC<HomeProps> = ({
         <div className="absolute bottom-8 right-8 w-16 h-16 border-r-2 border-b-2 border-primary/40 z-20" />
 
         {/* Main Content */}
-        <div className="container relative z-20 mx-auto px-6 py-20">
+        <div className="container relative z-20 mx-auto px-0 py-0 mr-[100px]">
           <div className="">
             <div className="max-w-4xl w-full parallax-layer shadow-md">
               {/* Badge - visible by default, animated after */}
