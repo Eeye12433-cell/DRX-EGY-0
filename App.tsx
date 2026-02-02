@@ -357,7 +357,7 @@ const App: React.FC = () => {
               element={<ProductDetailView lang={lang} products={products} setProducts={setProducts} addToCart={addToCart} />}
             />
             <Route path="/calculator" element={<CalculatorView lang={lang} />} />
-            <Route path="/verify" element={<VerifyView lang={lang} codes={codes} setCodes={setCodes} />} />
+            <Route path="/verify" element={<VerifyView lang={lang} />} />
             <Route path="/track" element={<TrackOrderView lang={lang} orders={orders} />} />
             <Route path="/contact" element={<ContactView lang={lang} />} />
             <Route

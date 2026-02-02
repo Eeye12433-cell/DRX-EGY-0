@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { CartItem, ShippingInfo, Order, OrderStatus, StripeConfig } from '../types';
+import { validateShippingForm, ShippingFormData } from '../src/lib/validations';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -16,6 +16,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [shipping, setShipping] = useState<ShippingInfo>({
     fullName: '',
     phone: '',
@@ -26,12 +27,36 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const total = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
+  const handleInputChange = (field: keyof ShippingInfo, value: string) => {
+    setShipping(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const updated = { ...prev };
+        delete updated[field];
+        return updated;
+      });
+    }
+  };
+
   const handleNextStep = () => {
     if (step === 1) {
-      if (!shipping.fullName || !shipping.phone || !shipping.email || (shipping.method === 'delivery' && !shipping.address)) {
-        alert(lang === 'ar' ? 'يرجى إكمال جميع الحقول' : 'Please fill all required fields');
+      const formData: ShippingFormData = {
+        fullName: shipping.fullName,
+        phone: shipping.phone,
+        email: shipping.email,
+        address: shipping.address || '',
+        method: shipping.method,
+      };
+
+      const validation = validateShippingForm(formData);
+      
+      if (!validation.success) {
+        setErrors(validation.errors);
         return;
       }
+
+      setErrors({});
       setStep(2);
     }
   };
@@ -84,29 +109,50 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[9px] font-mono text-zinc-500 uppercase">Full Name</label>
-                  <input type="text" className="w-full bg-black border border-white/10 p-3 text-sm outline-none focus:border-drxred" value={shipping.fullName} onChange={e => setShipping({...shipping, fullName: e.target.value})} />
+                  <input 
+                    type="text" 
+                    className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred ${errors.fullName ? 'border-red-500' : 'border-white/10'}`}
+                    value={shipping.fullName} 
+                    onChange={e => handleInputChange('fullName', e.target.value)}
+                    maxLength={100}
+                  />
+                  {errors.fullName && <p className="text-red-500 text-[10px] mt-1">{errors.fullName}</p>}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[9px] font-mono text-zinc-500 uppercase">Phone Number</label>
-                  <input type="text" className="w-full bg-black border border-white/10 p-3 text-sm outline-none focus:border-drxred" value={shipping.phone} onChange={e => setShipping({...shipping, phone: e.target.value})} />
+                  <input 
+                    type="tel" 
+                    className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred ${errors.phone ? 'border-red-500' : 'border-white/10'}`}
+                    value={shipping.phone} 
+                    onChange={e => handleInputChange('phone', e.target.value)}
+                    maxLength={20}
+                  />
+                  {errors.phone && <p className="text-red-500 text-[10px] mt-1">{errors.phone}</p>}
                 </div>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-mono text-zinc-500 uppercase">Email Address</label>
-                <input type="email" className="w-full bg-black border border-white/10 p-3 text-sm outline-none focus:border-drxred" value={shipping.email} onChange={e => setShipping({...shipping, email: e.target.value})} />
+                <input 
+                  type="email" 
+                  className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred ${errors.email ? 'border-red-500' : 'border-white/10'}`}
+                  value={shipping.email} 
+                  onChange={e => handleInputChange('email', e.target.value)}
+                  maxLength={255}
+                />
+                {errors.email && <p className="text-red-500 text-[10px] mt-1">{errors.email}</p>}
               </div>
 
               <div className="space-y-4 pt-4">
                 <label className="text-[9px] font-mono text-zinc-500 uppercase">Delivery Method</label>
                 <div className="grid grid-cols-2 gap-4">
                   <button 
-                    onClick={() => setShipping({...shipping, method: 'delivery'})}
+                    onClick={() => handleInputChange('method', 'delivery')}
                     className={`p-4 border font-mono text-[10px] uppercase transition-all ${shipping.method === 'delivery' ? 'bg-drxred border-drxred text-white' : 'bg-black border-white/5 text-zinc-600'}`}
                   >
                     Home Delivery
                   </button>
                   <button 
-                    onClick={() => setShipping({...shipping, method: 'pickup'})}
+                    onClick={() => handleInputChange('method', 'pickup')}
                     className={`p-4 border font-mono text-[10px] uppercase transition-all ${shipping.method === 'pickup' ? 'bg-drxred border-drxred text-white' : 'bg-black border-white/5 text-zinc-600'}`}
                   >
                     Store Pickup
@@ -117,7 +163,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {shipping.method === 'delivery' && (
                 <div className="space-y-1 animate-in fade-in duration-300">
                   <label className="text-[9px] font-mono text-zinc-500 uppercase">Full Shipping Address</label>
-                  <textarea rows={3} className="w-full bg-black border border-white/10 p-3 text-sm outline-none focus:border-drxred resize-none" value={shipping.address} onChange={e => setShipping({...shipping, address: e.target.value})} />
+                  <textarea 
+                    rows={3} 
+                    className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred resize-none ${errors.address ? 'border-red-500' : 'border-white/10'}`}
+                    value={shipping.address} 
+                    onChange={e => handleInputChange('address', e.target.value)}
+                    maxLength={500}
+                  />
+                  {errors.address && <p className="text-red-500 text-[10px] mt-1">{errors.address}</p>}
                 </div>
               )}
 
@@ -154,10 +207,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </div>
                     {/* Simulated Stripe Input */}
                     <div className="space-y-4">
-                      <input required type="text" placeholder="Card Number" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" />
+                      <input required type="text" placeholder="Card Number" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={19} />
                       <div className="grid grid-cols-2 gap-4">
-                        <input required type="text" placeholder="MM / YY" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" />
-                        <input required type="text" placeholder="CVC" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" />
+                        <input required type="text" placeholder="MM / YY" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={7} />
+                        <input required type="text" placeholder="CVC" className="w-full bg-transparent border-b border-white/10 py-2 font-mono text-sm outline-none focus:border-drxred" maxLength={4} />
                       </div>
                     </div>
                   </div>

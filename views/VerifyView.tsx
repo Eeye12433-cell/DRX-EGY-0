@@ -1,39 +1,45 @@
-
 import React, { useState } from 'react';
-import { VerificationCode } from '../types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VerifyViewProps {
   lang: 'ar' | 'en';
-  codes: Record<string, VerificationCode>;
-  setCodes: React.Dispatch<React.SetStateAction<Record<string, VerificationCode>>>;
 }
 
-const VerifyView: React.FC<VerifyViewProps> = ({ lang, codes, setCodes }) => {
+const VerifyView: React.FC<VerifyViewProps> = ({ lang }) => {
   const [input, setInput] = useState('');
-  const [status, setStatus] = useState<'idle' | 'success' | 'used' | 'invalid'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'used' | 'invalid'>('idle');
+  const [verifiedCode, setVerifiedCode] = useState<string | null>(null);
 
-  const handleVerify = () => {
-    let cleanCode = input.trim().toUpperCase();
-    
-    // Auto-formatting help
-    if (!cleanCode.startsWith('DRX-EGY-')) {
-        const digits = cleanCode.match(/\d+/);
-        if (digits) {
-            cleanCode = `DRX-EGY-${digits[0].padStart(3, '0')}`;
-        }
+  const handleVerify = async () => {
+    if (!input.trim()) {
+      setStatus('invalid');
+      return;
     }
 
-    const codeObj = codes[cleanCode];
+    setStatus('loading');
 
-    if (!codeObj) {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-code', {
+        body: { code: input.trim() }
+      });
+
+      if (error) {
+        console.error('Verification error:', error);
+        setStatus('invalid');
+        return;
+      }
+
+      if (data.valid) {
+        setVerifiedCode(data.code);
+        setStatus('success');
+      } else if (data.reason === 'already_used') {
+        setStatus('used');
+      } else {
+        setStatus('invalid');
+      }
+    } catch (err) {
+      console.error('Verification failed:', err);
       setStatus('invalid');
-    } else if (codeObj.used) {
-      setStatus('used');
-    } else {
-      const updated = { ...codes };
-      updated[cleanCode] = { ...codeObj, used: true, usedAt: new Date().toISOString() };
-      setCodes(updated);
-      setStatus('success');
     }
   };
 
@@ -55,12 +61,22 @@ const VerifyView: React.FC<VerifyViewProps> = ({ lang, codes, setCodes }) => {
             className="w-full bg-bg-primary border border-white/10 p-4 text-center text-xl font-mono tracking-widest outline-none focus:border-drxred"
             value={input}
             onChange={e => setInput(e.target.value)}
+            maxLength={20}
+            disabled={status === 'loading'}
           />
           <button 
             onClick={handleVerify}
-            className="btn-drx w-full bg-drxred py-4 font-bold uppercase tracking-widest"
+            disabled={status === 'loading'}
+            className="btn-drx w-full bg-drxred py-4 font-bold uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {lang === 'ar' ? 'تحقق الآن' : 'Verify Now'}
+            {status === 'loading' ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                {lang === 'ar' ? 'جاري التحقق...' : 'Verifying...'}
+              </>
+            ) : (
+              lang === 'ar' ? 'تحقق الآن' : 'Verify Now'
+            )}
           </button>
         </div>
 
@@ -68,6 +84,7 @@ const VerifyView: React.FC<VerifyViewProps> = ({ lang, codes, setCodes }) => {
           <div className="mt-10 p-6 bg-green-500/10 border border-green-500 text-green-500 rounded animate-bounce">
             <h4 className="text-xl font-oswald mb-1">✓ AUTHENTIC PRODUCT</h4>
             <p className="text-xs">Verified DRX Pharmaceutical Grade Quality</p>
+            {verifiedCode && <p className="text-[10px] mt-2 font-mono opacity-70">Code: {verifiedCode}</p>}
           </div>
         )}
 
