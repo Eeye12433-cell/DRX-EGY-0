@@ -381,30 +381,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang }) 
     }
   };
 
-  const deleteProduct = async (id: string, productName: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${productName}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Failed to delete product:', error);
-        alert('Failed to delete product. Please try again.');
-        return;
-      }
-
-      setProducts(products.filter(p => p.id !== id));
-    } catch (err) {
-      console.error('Error deleting product:', err);
-      alert('An error occurred while deleting the product.');
-    }
-  };
-
   const updateOrderStatus = async (id: string, status: OrderStatus) => {
     try {
       await supabase.functions.invoke('admin-orders', {
@@ -610,20 +586,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang }) 
                     <div className="text-3xl font-oswald text-drxred font-bold">
                       {p.price.toLocaleString()} <span className="text-sm">LE</span>
                     </div>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => openForm(p)}
-                        className="text-[10px] font-mono font-bold uppercase text-muted hover:text-drxred underline decoration-drxred/30 underline-offset-4 tracking-mega transition-colors"
-                      >
-                        Modify
-                      </button>
-                      <button
-                        onClick={() => deleteProduct(p.id, lang === 'ar' ? p.name_ar : p.name_en)}
-                        className="text-[10px] font-mono font-bold uppercase text-muted hover:text-red-500 underline decoration-red-500/30 underline-offset-4 tracking-mega transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => openForm(p)}
+                      className="text-[10px] font-mono font-bold uppercase text-muted hover:text-drxred underline decoration-drxred/30 underline-offset-4 tracking-mega transition-colors"
+                    >
+                      Modify
+                    </button>
                   </div>
                 </div>
               </div>
