@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import gsap from 'gsap';
-import { Product, CartItem, Order, OrderStatus } from './types';
-import { INITIAL_PRODUCTS } from './constants';
+import { Product, CartItem, Order } from './types';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Home from './views/Home';
@@ -18,6 +17,7 @@ import ProductDetailView from './views/ProductDetailView';
 import PerformanceCoach from './components/PerformanceCoach';
 import ComparisonBar from './components/ComparisonBar';
 import ComparisonMatrix from './components/ComparisonMatrix';
+import { useProducts } from '@/hooks/useProducts';
 
 const ContactView: React.FC<{ lang: 'ar' | 'en' }> = ({ lang }) => (
   <div className="max-w-2xl mx-auto py-20 px-4">
@@ -97,7 +97,9 @@ const PolicyView: React.FC<{ lang: 'ar' | 'en'; type: string }> = ({ lang, type 
 };
 
 const App: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  // Products now fetched from database via hook
+  const { products, setProducts, loading: productsLoading } = useProducts();
+  
   const [cart, setCart] = useState<CartItem[]>([]);
   const [viewHistory, setViewHistory] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -112,11 +114,8 @@ const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load persisted state (only non-sensitive data)
+  // Load persisted state (only non-sensitive data - NOT products, those come from DB)
   useEffect(() => {
-    const savedProducts = localStorage.getItem('drx-products');
-    setProducts(savedProducts ? JSON.parse(savedProducts) : INITIAL_PRODUCTS);
-
     const savedTheme = localStorage.getItem('drx-theme');
     if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);
 
@@ -130,9 +129,8 @@ const App: React.FC = () => {
     if (savedViewHistory) setViewHistory(JSON.parse(savedViewHistory));
   }, []);
 
-  // Persist state + apply theme/lang to root (only non-sensitive data)
+  // Persist state + apply theme/lang to root (products NOT stored in localStorage anymore)
   useEffect(() => {
-    localStorage.setItem('drx-products', JSON.stringify(products));
     localStorage.setItem('drx-cart', JSON.stringify(cart));
     localStorage.setItem('drx-theme', theme);
     localStorage.setItem('drx-lang', lang);
@@ -143,7 +141,7 @@ const App: React.FC = () => {
     root.classList.add(theme);
     root.lang = lang;
     root.dir = lang === 'ar' ? 'rtl' : 'ltr';
-  }, [products, cart, theme, lang, viewHistory]);
+  }, [cart, theme, lang, viewHistory]);
 
   // Track product views
   useEffect(() => {

@@ -305,14 +305,80 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang }) 
     }
   };
 
-  const saveProduct = (e: React.FormEvent) => {
+  const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingId) {
-      setProducts(products.map(p => p.id === editingId ? { ...p, ...(formData as Product) } : p));
-    } else {
-      setProducts([...products, { ...(formData as Product), id: `prod-${Date.now()}` }]);
+    
+    try {
+      // Map form data to database format
+      const dbData = {
+        name_ar: formData.name_ar,
+        name_en: formData.name_en,
+        description_ar: formData.description_ar,
+        description_en: formData.description_en,
+        price: formData.price,
+        image: formData.image,
+        category: formData.category,
+        in_stock: formData.inStock,
+        is_new: formData.isNew,
+        is_best_seller: formData.isBestSeller,
+        featured: formData.featured,
+        goals: formData.goals,
+        slug: formData.name_en?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `product-${Date.now()}`,
+      };
+
+      if (editingId) {
+        // Update existing product in database
+        const { error } = await supabase
+          .from('products')
+          .update(dbData)
+          .eq('id', editingId);
+
+        if (error) {
+          console.error('Failed to update product:', error);
+          alert('Failed to update product. Please try again.');
+          return;
+        }
+
+        setProducts(products.map(p => p.id === editingId ? { ...p, ...(formData as Product) } : p));
+      } else {
+        // Insert new product in database
+        const { data, error } = await supabase
+          .from('products')
+          .insert(dbData)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Failed to add product:', error);
+          alert('Failed to add product. Please try again.');
+          return;
+        }
+
+        // Map returned data back to Product type
+        const newProduct: Product = {
+          id: data.id,
+          name_ar: data.name_ar,
+          name_en: data.name_en,
+          description_ar: data.description_ar || '',
+          description_en: data.description_en || '',
+          price: Number(data.price),
+          image: data.image || '',
+          category: data.category as Category,
+          inStock: data.in_stock,
+          isNew: data.is_new,
+          isBestSeller: data.is_best_seller,
+          featured: data.featured || 0,
+          goals: data.goals || [],
+        };
+        
+        setProducts([...products, newProduct]);
+      }
+      
+      setIsFormOpen(false);
+    } catch (err) {
+      console.error('Error saving product:', err);
+      alert('An error occurred while saving the product.');
     }
-    setIsFormOpen(false);
   };
 
   const updateOrderStatus = async (id: string, status: OrderStatus) => {
