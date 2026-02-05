@@ -98,7 +98,7 @@ const PolicyView: React.FC<{ lang: 'ar' | 'en'; type: string }> = ({ lang, type 
 
 const App: React.FC = () => {
   // Products now fetched from database via hook
-  const { products, setProducts, loading: productsLoading } = useProducts();
+  const { products, setProducts, loading: productsLoading, refetch: refetchProducts } = useProducts();
   
   const [cart, setCart] = useState<CartItem[]>([]);
   const [viewHistory, setViewHistory] = useState<string[]>([]);
@@ -330,6 +330,7 @@ const App: React.FC = () => {
                   lang={lang}
                   products={products}
                   setProducts={setProducts}
+                  refetchProducts={refetchProducts}
                 />
               }
             />
