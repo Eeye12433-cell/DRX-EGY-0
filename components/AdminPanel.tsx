@@ -1063,26 +1063,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
                   <div className="flex flex-wrap gap-3">
                     {GOALS.map(goal => (
                       <label
-                        key={goal}
+                        key={goal.id}
                         className={`px-5 py-3 border cursor-pointer text-[10px] font-mono uppercase font-bold tracking-mega transition-all rounded-sm ${
-                          formData.goals?.includes(goal) ? 'bg-drxred border-drxred text-white' : 'border-ui text-muted hover:text-white hover:border-white/30'
+                          formData.goals?.includes(goal.id) ? 'bg-drxred border-drxred text-white' : 'border-ui text-muted hover:text-white hover:border-white/30'
                         }`}
                       >
                         <input
                           type="checkbox"
                           className="sr-only"
-                          checked={formData.goals?.includes(goal)}
+                          checked={formData.goals?.includes(goal.id)}
                           onChange={e => {
                             const currentGoals = formData.goals || [];
                             setFormData({
                               ...formData,
                               goals: e.target.checked
-                                ? [...currentGoals, goal]
-                                : currentGoals.filter(g => g !== goal)
+                                ? [...currentGoals, goal.id]
+                                : currentGoals.filter(g => g !== goal.id)
                             });
                           }}
                         />
-                        {goal}
+                        {goal.emoji} {lang === 'ar' ? goal.label_ar : goal.label_en}
                       </label>
                     ))}
                   </div>
