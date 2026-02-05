@@ -20,6 +20,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [shipping, setShipping] = useState<ShippingInfo>({
     fullName: '',
     phone: '',
@@ -118,6 +119,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       };
       
       onOrderComplete(newOrder);
+      setCompletedOrder(newOrder);
       setLoading(false);
       setStep(3);
     } catch (error) {
@@ -127,7 +129,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    // Reset state when modal is closed
+    return null;
+  }
 
   const paymentMethods = [
     {
@@ -412,7 +417,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               
               <div className="bg-black/40 border border-white/5 p-6 max-w-sm mx-auto">
                 <p className="text-[10px] font-mono text-zinc-600 uppercase mb-2">{lang === 'ar' ? 'رقم التتبع' : 'Tracking Number'}</p>
-                <p className="text-xl font-oswald text-white tracking-widest font-bold">DRX-TRK-XXXXXX</p>
+                <p className="text-xl font-oswald text-white tracking-widest font-bold">{completedOrder?.trackingNumber || 'DRX-TRK-XXXXXX'}</p>
                 <div className="mt-4 pt-4 border-t border-white/5 space-y-2">
                   <p className="text-[10px] text-zinc-400 font-inter">
                     {lang === 'ar' ? 'احفظ هذا الرقم لتتبع طلبك' : 'Save this number to track your order'}
