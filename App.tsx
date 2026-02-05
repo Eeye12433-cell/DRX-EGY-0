@@ -247,7 +247,7 @@ const App: React.FC = () => {
         cart={cart}
         onRemove={removeFromCart}
         onUpdateQuantity={updateQuantity}
-        onClearCart={clearCart}
+        onClear={clearCart}
         lang={lang}
         onCheckout={() => setIsCheckoutOpen(true)}
       />

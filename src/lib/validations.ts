@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 // Shipping/Checkout form validation schema
 export const ShippingSchema = z.object({
@@ -17,8 +17,9 @@ export const ShippingSchema = z.object({
   email: z
     .string()
     .trim()
-    .email('Please enter a valid email address')
-    .max(255, 'Email must be less than 255 characters'),
+    .max(255, 'Email must be less than 255 characters')
+    .optional()
+    .or(z.literal('')),
   
   address: z
     .string()
@@ -38,7 +39,24 @@ export function validateShippingForm(data: ShippingFormData): {
   success: boolean; 
   errors: Record<string, string> 
 } {
-  const result = ShippingSchema.safeParse(data);
+  // Pre-process email - treat empty string as undefined
+  const processedData = {
+    ...data,
+    email: data.email && data.email.trim() ? data.email : undefined
+  };
+  
+  // Validate email format if provided
+  if (processedData.email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(processedData.email)) {
+      return {
+        success: false,
+        errors: { email: 'Please enter a valid email address' }
+      };
+    }
+  }
+  
+  const result = ShippingSchema.safeParse(processedData);
   
   if (result.success) {
     // Additional validation for delivery method
