@@ -207,7 +207,7 @@ const Home: React.FC<HomeProps> = ({ lang }) => {
 
       // Glow pulse
       gsap.to(".glow-pulse", {
-        boxShadow: "0 0 60px hsl(var(--primary) / 0.4)",
+        boxShadow: "0 0 60px rgba(225, 29, 72, 0.4)",
         duration: 2,
         repeat: -1,
         yoyo: true,
