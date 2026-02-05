@@ -11,6 +11,7 @@ interface AdminPanelProps {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   lang: 'ar' | 'en';
+  refetchProducts: () => Promise<void>;
 }
 
 const BG_THEMES = [
@@ -22,7 +23,7 @@ const BG_THEMES = [
   { id: 'wood-natural', label: 'Organic Minimalist', prompt: 'natural light wood surface with soft morning light and blurred greenery background' }
 ];
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang }) => {
+const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, refetchProducts }) => {
   const { user, isAdmin, loading, signIn, signOut } = useAuth();
   
   // Auth form state
@@ -339,14 +340,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang }) 
           return;
         }
 
-        setProducts(products.map(p => p.id === editingId ? { ...p, ...(formData as Product) } : p));
+        // Refetch products from database to ensure UI is in sync
+        await refetchProducts();
       } else {
         // Insert new product in database
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('products')
           .insert(dbData)
-          .select()
-          .single();
+          .select();
 
         if (error) {
           console.error('Failed to add product:', error);
@@ -354,24 +355,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang }) 
           return;
         }
 
-        // Map returned data back to Product type
-        const newProduct: Product = {
-          id: data.id,
-          name_ar: data.name_ar,
-          name_en: data.name_en,
-          description_ar: data.description_ar || '',
-          description_en: data.description_en || '',
-          price: Number(data.price),
-          image: data.image || '',
-          category: data.category as Category,
-          inStock: data.in_stock,
-          isNew: data.is_new,
-          isBestSeller: data.is_best_seller,
-          featured: data.featured || 0,
-          goals: data.goals || [],
-        };
-        
-        setProducts([...products, newProduct]);
+        // Refetch products from database to ensure UI is in sync
+        await refetchProducts();
       }
       
       setIsFormOpen(false);
@@ -398,7 +383,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang }) 
         return;
       }
 
-      setProducts(products.filter(p => p.id !== id));
+      // Refetch products from database to ensure UI is in sync
+      await refetchProducts();
     } catch (err) {
       console.error('Error deleting product:', err);
       alert('An error occurred while deleting the product.');
