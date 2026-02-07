@@ -45,7 +45,7 @@ const mapProductToDb = (product: Partial<Product>) => ({
   is_best_seller: product.isBestSeller,
   featured: product.featured,
   goals: product.goals,
-  slug: product.name_en?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `product-${Date.now()}`,
+  slug: `${product.name_en?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'product'}-${Date.now()}`,
 });
 
 export function useProducts(): UseProductsReturn {
