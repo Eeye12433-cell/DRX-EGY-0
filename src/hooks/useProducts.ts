@@ -39,7 +39,7 @@ const mapProductToDb = (product: Partial<Product>) => ({
   description_en: product.description_en,
   price: product.price,
   image: product.image,
-  category: product.category,
+  category: product.category as "Protein" | "Performance" | "Pre-Workout" | "Recovery" | "Health & Wellness",
   in_stock: product.inStock,
   is_new: product.isNew,
   is_best_seller: product.isBestSeller,
@@ -88,7 +88,7 @@ export function useProducts(): UseProductsReturn {
       const dbProduct = mapProductToDb(product);
       const { data, error: insertError } = await supabase
         .from('products')
-        .insert(dbProduct)
+        .insert([dbProduct] as any)
         .select()
         .single();
 

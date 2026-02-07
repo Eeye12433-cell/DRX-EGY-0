@@ -346,7 +346,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
         // Insert new product in database
         const { error } = await supabase
           .from('products')
-          .insert(dbData)
+          .insert([dbData] as any)
           .select();
 
         if (error) {

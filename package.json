@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.93.3",
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
     "gsap": "^3.14.2",
     "lovable-tagger": "^1.1.13",
     "react": "^19.2.3",
