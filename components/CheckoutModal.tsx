@@ -52,7 +52,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         phone: shipping.phone,
         email: shipping.email,
         address: shipping.address || '',
-        method: shipping.method,
+        method: shipping.method as 'delivery' | 'pickup',
       };
 
       const validation = validateShippingForm(formData);
@@ -431,12 +431,25 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a 
-                  href="https://wa.me/201012345678" 
+                  href={(() => {
+                    const orderItems = cart.map(item => 
+                      `${item.quantity}x ${lang === 'ar' ? item.product.name_ar : item.product.name_en} (${item.product.price} LE)`
+                    ).join('%0A');
+                    const trackingNum = completedOrder?.trackingNumber || '';
+                    const paymentLabel = paymentMethod === 'cod' ? (lang === 'ar' ? 'الدفع عند الاستلام' : 'Cash on Delivery')
+                      : paymentMethod === 'vodafone_cash' ? 'Vodafone Cash'
+                      : paymentMethod === 'instapay' ? 'InstaPay'
+                      : 'Fawry';
+                    const msg = lang === 'ar'
+                      ? `مرحباً DRX! 🛒%0Aطلب جديد:%0A${orderItems}%0A%0Aالإجمالي: ${total.toLocaleString()} LE%0Aطريقة الدفع: ${paymentLabel}%0Aرقم التتبع: ${trackingNum}%0Aالاسم: ${encodeURIComponent(shipping.fullName)}%0Aالهاتف: ${shipping.phone}`
+                      : `Hi DRX! 🛒%0ANew Order:%0A${orderItems}%0A%0ATotal: ${total.toLocaleString()} LE%0APayment: ${paymentLabel}%0ATracking: ${trackingNum}%0AName: ${encodeURIComponent(shipping.fullName)}%0APhone: ${shipping.phone}`;
+                    return `https://wa.me/201012345678?text=${msg}`;
+                  })()}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="bg-green-600 text-white px-8 py-4 font-bold uppercase tracking-widest text-xs hover:bg-green-500 transition-all inline-flex items-center justify-center gap-2"
                 >
-                  <span>💬</span> {lang === 'ar' ? 'تواصل واتساب' : 'WhatsApp Us'}
+                  <span>💬</span> {lang === 'ar' ? 'تأكيد عبر واتساب' : 'Confirm via WhatsApp'}
                 </a>
                 <button onClick={onClose} className="btn-drx bg-white text-black px-8 py-4 font-bold uppercase tracking-widest text-xs hover:bg-drxred hover:text-white transition-all">
                   {lang === 'ar' ? 'العودة للمتجر' : 'Back to Shop'}

@@ -69,11 +69,11 @@ const CartPanel: React.FC<CartPanelProps> = ({
                       <div className="text-drxred font-oswald text-xl font-bold mt-1">
                         {item.product.price.toLocaleString()} <span className="text-xs">LE</span>
                       </div>
-                      {!!item.product.subscription && (
+                      {!!(item.product as any).subscription && (
                         <div className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mt-2">
                           {lang === 'ar'
-                            ? `اشتراك كل ${item.product.subscription} يوم`
-                            : `Auto every ${item.product.subscription} days`}
+                            ? `اشتراك كل ${(item.product as any).subscription} يوم`
+                            : `Auto every ${(item.product as any).subscription} days`}
                         </div>
                       )}
                     </div>
