@@ -1,77 +1,53 @@
 
 
-# Complete Fix Plan for DRX Egypt App
+## Fix: Admin Cannot Edit or Delete Products
 
-## Critical Issue Found
+### Root Cause
 
-Your `package.json` file has a **JSON syntax error** - there's a missing comma after the closing brace of the `scripts` section. This is preventing the entire app from building.
+All Row Level Security (RLS) policies on the `products` table are set to **RESTRICTIVE** instead of **PERMISSIVE**. In the database, RESTRICTIVE policies can only narrow access but cannot grant it. Since there are no PERMISSIVE policies at all, the result is that **no one** — not even admins — can access any products.
 
----
+This also explains why the products list shows empty for authenticated admin users (the network request returns `[]`).
 
-## Step 1: Fix package.json JSON Syntax (Manual - Required)
+### Solution
 
-You need to edit `package.json` via GitHub to fix the formatting error.
+Drop all existing product policies and recreate them as **PERMISSIVE** policies:
 
-### Current (Broken):
-```json
-"scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "build:dev": "vite build --mode development",
-  "preview": "vite preview"
-}
-  "dependencies": {
+1. **"Products are viewable by everyone"** (SELECT) — allows all users to read products
+2. **"Only admins can insert products"** (INSERT) — admin check
+3. **"Only admins can update products"** (UPDATE) — admin check
+4. **"Only admins can delete products"** (DELETE) — admin check
+
+### Technical Details
+
+A single database migration will:
+
+```sql
+-- Drop all existing RESTRICTIVE policies
+DROP POLICY IF EXISTS "Products are viewable by everyone" ON public.products;
+DROP POLICY IF EXISTS "Only admins can insert products" ON public.products;
+DROP POLICY IF EXISTS "Only admins can update products" ON public.products;
+DROP POLICY IF EXISTS "Only admins can delete products" ON public.products;
+DROP POLICY IF EXISTS "Admins can read products" ON public.products;
+DROP POLICY IF EXISTS "Admins can manage products" ON public.products;
+
+-- Recreate as PERMISSIVE
+CREATE POLICY "Products are viewable by everyone"
+  ON public.products FOR SELECT
+  USING (true);
+
+CREATE POLICY "Only admins can insert products"
+  ON public.products FOR INSERT
+  WITH CHECK (is_admin());
+
+CREATE POLICY "Only admins can update products"
+  ON public.products FOR UPDATE
+  USING (is_admin())
+  WITH CHECK (is_admin());
+
+CREATE POLICY "Only admins can delete products"
+  ON public.products FOR DELETE
+  USING (is_admin());
 ```
 
-### Fixed (Add comma after closing brace):
-```json
-"scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "build:dev": "vite build --mode development",
-  "preview": "vite preview"
-},
-  "dependencies": {
-```
-
-### How to Fix:
-1. Go to **Settings** (click project name top-left) then **GitHub**
-2. Click to open your repository on GitHub
-3. Navigate to `package.json`
-4. Click the **pencil icon** to edit
-5. Find line 11 (the `}` after `"preview": "vite preview"`)
-6. Add a comma after it: `},`
-7. Click **Commit changes**
-8. Wait for the sync back to Lovable (usually 30-60 seconds)
-
----
-
-## Step 2: Verify Build Success
-
-After fixing `package.json`, the app should build successfully. The following are already in place:
-
-| Component | Status |
-|-----------|--------|
-| `build:dev` script | Added (just needs comma fix) |
-| Vite type definitions (`vite-env.d.ts`) | Already created |
-| Supabase functions directory | Already created |
-| `lovable-tagger` dependency | Already installed |
-
----
-
-## Step 3: Seed Products Database (After Build Works)
-
-Once the app builds, I can help you populate the products table with data from your `constants.ts` file.
-
----
-
-## Step 4: Connect Shop to Database (After Seeding)
-
-Update the Shop view to fetch products from the database instead of using hardcoded data.
-
----
-
-## Technical Summary
-
-The root cause of all build failures is the missing comma in `package.json`. Once you fix that single character, the app should build and run correctly.
+No code changes are needed — the AdminPanel already has the correct logic for editing and deleting. The issue is purely at the database policy level.
 
