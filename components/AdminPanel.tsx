@@ -759,9 +759,385 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
         </div>
       )}
 
-      {/* Codes + Orders tabs + Modals: keep as in your existing file
-          - Just make sure functions.invoke calls include headers from getAuthHeaders
-          - You can paste your existing sections below if you want, or I can rebuild full file end-to-end */}
+      {/* Codes Tab */}
+      {activeTab === 'codes' && (
+        <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-bg-card border border-ui p-8 rounded-sm shadow-xl">
+            <h3 className="text-3xl font-oswald uppercase tracking-tight">Verification Codes</h3>
+            <button
+              onClick={() => openCodeModal()}
+              className="bg-drxred text-white px-10 py-4 text-[10px] font-black uppercase tracking-mega hover:bg-white hover:text-drxred border border-drxred transition-all shadow-lg"
+            >
+              + Generate Code
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <input
+              type="text"
+              placeholder="Search codes..."
+              className="bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred transition-all flex-1"
+              value={codeSearch}
+              onChange={e => setCodeSearch(e.target.value)}
+            />
+            <div className="flex gap-2">
+              {(['all', 'used', 'available'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setCodeFilter(f)}
+                  className={`px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-mega transition-all ${
+                    codeFilter === f ? 'bg-drxred text-white' : 'text-muted hover:text-drxred'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filteredCodes.map(c => (
+              <div key={c.id} className="card-ui p-6 flex justify-between items-center">
+                <div>
+                  <span className="font-mono font-bold text-sm">{c.id}</span>
+                  <div className={`text-[10px] font-mono uppercase tracking-mega mt-1 ${c.used ? 'text-red-500' : 'text-green-500'}`}>
+                    {c.used ? `Used ${c.usedAt ? new Date(c.usedAt).toLocaleDateString() : ''}` : 'Available'}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => openCodeModal(c)}
+                    className="text-[10px] font-mono font-bold uppercase text-muted hover:text-drxred tracking-mega transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteCode(c.id)}
+                    className="text-[10px] font-mono font-bold uppercase text-muted hover:text-red-500 tracking-mega transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Orders Tab */}
+      {activeTab === 'orders' && (
+        <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="bg-bg-card border border-ui p-8 rounded-sm shadow-xl">
+            <h3 className="text-3xl font-oswald uppercase tracking-tight mb-2">Order Management</h3>
+            <p className="text-[10px] font-mono text-muted uppercase tracking-mega">{orders.length} orders total</p>
+          </div>
+
+          {orders.length === 0 ? (
+            <div className="text-center py-16 text-muted font-mono">No orders yet.</div>
+          ) : (
+            <div className="space-y-4">
+              {orders.map(o => (
+                <div key={o.id} className="card-ui p-6">
+                  <div className="flex flex-col lg:flex-row justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="font-mono font-bold text-sm">{o.trackingNumber}</div>
+                      <div className="text-[10px] font-mono text-muted uppercase tracking-mega">
+                        {o.shippingInfo.fullName} · {o.shippingInfo.phone}
+                      </div>
+                      <div className="text-[10px] font-mono text-muted">
+                        {o.shippingInfo.email} · {o.shippingInfo.method}
+                      </div>
+                      {o.shippingInfo.address && (
+                        <div className="text-[10px] font-mono text-muted">{o.shippingInfo.address}</div>
+                      )}
+                      <div className="text-xs font-mono text-muted">
+                        {new Date(o.createdAt).toLocaleString()}
+                      </div>
+                      <div className="text-sm font-mono">
+                        {o.items.map((item, i) => (
+                          <span key={i}>{item.product.name_en} x{item.quantity}{i < o.items.length - 1 ? ', ' : ''}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-3">
+                      <div className="text-2xl font-oswald font-bold text-drxred">
+                        {o.total.toLocaleString()} <span className="text-sm">LE</span>
+                      </div>
+                      <select
+                        value={o.status}
+                        onChange={e => updateOrderStatus(o.id, e.target.value as OrderStatus)}
+                        className="bg-transparent border border-ui p-2 font-mono text-xs uppercase"
+                      >
+                        {(['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'] as OrderStatus[]).map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Product Form Modal */}
+      {isFormOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="card-ui max-w-4xl w-full p-8 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-3xl font-oswald uppercase">
+                {editingKey ? 'Modify' : 'Deploy'} <span className="text-drxred">Unit</span>
+              </h3>
+              <button onClick={() => setIsFormOpen(false)} className="text-muted hover:text-drxred text-2xl">✕</button>
+            </div>
+
+            <form onSubmit={saveProduct} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Name (EN)</label>
+                  <input
+                    type="text"
+                    className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={formData.name_en || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, name_en: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Name (AR)</label>
+                  <input
+                    type="text"
+                    className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={formData.name_ar || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, name_ar: e.target.value }))}
+                    required
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Description (EN)</label>
+                  <textarea
+                    className="w-full bg-transparent border border-ui p-3 font-mono text-sm outline-none focus:border-drxred min-h-[80px]"
+                    value={formData.description_en || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, description_en: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Description (AR)</label>
+                  <textarea
+                    className="w-full bg-transparent border border-ui p-3 font-mono text-sm outline-none focus:border-drxred min-h-[80px]"
+                    value={formData.description_ar || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, description_ar: e.target.value }))}
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Price (LE)</label>
+                  <input
+                    type="number"
+                    className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={formData.price || 0}
+                    onChange={e => setFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Category</label>
+                  <select
+                    className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={formData.category || Category.Protein}
+                    onChange={e => setFormData(prev => ({ ...prev, category: e.target.value as Category }))}
+                  >
+                    {Object.values(Category).map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Display Order</label>
+                  <input
+                    type="number"
+                    className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={formData.featured || 0}
+                    onChange={e => setFormData(prev => ({ ...prev, featured: Number(e.target.value) }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Image URL</label>
+                <input
+                  type="url"
+                  className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                  value={formData.image || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, image: e.target.value }))}
+                  placeholder="https://..."
+                />
+                {formData.image && (
+                  <div className="mt-2 w-32 h-32 bg-black overflow-hidden rounded">
+                    <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={formData.inStock ?? true} onChange={e => setFormData(prev => ({ ...prev, inStock: e.target.checked }))} />
+                  <span className="text-[10px] font-mono uppercase tracking-mega">In Stock</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={formData.isNew ?? false} onChange={e => setFormData(prev => ({ ...prev, isNew: e.target.checked }))} />
+                  <span className="text-[10px] font-mono uppercase tracking-mega">New</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={formData.isBestSeller ?? false} onChange={e => setFormData(prev => ({ ...prev, isBestSeller: e.target.checked }))} />
+                  <span className="text-[10px] font-mono uppercase tracking-mega">Best Seller</span>
+                </label>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Goals</label>
+                <div className="flex flex-wrap gap-2">
+                  {GOALS.map(g => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => {
+                        const goals = formData.goals || [];
+                        setFormData(prev => ({
+                          ...prev,
+                          goals: goals.includes(g.id) ? goals.filter(x => x !== g.id) : [...goals, g.id]
+                        }));
+                      }}
+                      className={`px-3 py-1 text-[10px] font-mono uppercase tracking-mega border transition-all ${
+                        (formData.goals || []).includes(g.id) ? 'bg-drxred text-white border-drxred' : 'border-ui text-muted hover:border-drxred'
+                      }`}
+                    >
+                      {g.emoji} {g.label_en}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Image Generation */}
+              <div className="border border-ui p-6 space-y-4">
+                <h4 className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega">AI Image Tools</h4>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase tracking-mega block">Background Theme</label>
+                  <select
+                    className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={selectedTheme}
+                    onChange={e => setSelectedTheme(e.target.value)}
+                  >
+                    {BG_THEMES.map(t => (
+                      <option key={t.id} value={t.prompt}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSynthesizeImage}
+                  disabled={isGeneratingImage}
+                  className="bg-drxred text-white px-6 py-3 text-[10px] font-bold uppercase tracking-mega disabled:opacity-50"
+                >
+                  {isGeneratingImage ? 'Generating...' : 'Generate Image'}
+                </button>
+
+                <div className="flex gap-2 items-end">
+                  <input
+                    type="text"
+                    placeholder="Edit prompt (e.g. 'make it darker')"
+                    className="flex-1 bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={aiEditPrompt}
+                    onChange={e => setAiEditPrompt(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAiEdit}
+                    disabled={isGeneratingImage || !aiEditPrompt}
+                    className="bg-zinc-700 text-white px-6 py-3 text-[10px] font-bold uppercase tracking-mega disabled:opacity-50"
+                  >
+                    AI Edit
+                  </button>
+                </div>
+
+                {isGeneratingImage && <ImageGenerationSkeleton />}
+                {imageError && <ErrorState message={imageError} onRetry={handleSynthesizeImage} />}
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  className="bg-drxred text-white px-10 py-4 text-[10px] font-black uppercase tracking-mega hover:bg-white hover:text-drxred border border-drxred transition-all flex-1"
+                >
+                  {editingKey ? 'Save Modifications' : 'Deploy Unit'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFormOpen(false)}
+                  className="bg-zinc-800 text-white px-10 py-4 text-[10px] font-black uppercase tracking-mega hover:bg-zinc-700 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Code Modal */}
+      {isCodeModalOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="card-ui max-w-md w-full p-8">
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-2xl font-oswald uppercase">
+                {editingCodeId ? 'Edit' : 'Create'} <span className="text-drxred">Code</span>
+              </h3>
+              <button onClick={() => setIsCodeModalOpen(false)} className="text-muted hover:text-drxred text-2xl">✕</button>
+            </div>
+
+            <form onSubmit={saveCode} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Code ID</label>
+                <input
+                  type="text"
+                  className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                  value={codeFormId}
+                  onChange={e => setCodeFormId(e.target.value)}
+                  disabled={!!editingCodeId}
+                  required
+                />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={codeFormUsed} onChange={e => setCodeFormUsed(e.target.checked)} />
+                <span className="text-[10px] font-mono uppercase tracking-mega">Mark as Used</span>
+              </label>
+              <div className="flex gap-4">
+                <button
+                  type="submit"
+                  className="bg-drxred text-white px-8 py-3 text-[10px] font-black uppercase tracking-mega flex-1"
+                >
+                  {editingCodeId ? 'Update' : 'Create'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCodeModalOpen(false)}
+                  className="bg-zinc-800 text-white px-8 py-3 text-[10px] font-black uppercase tracking-mega"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
