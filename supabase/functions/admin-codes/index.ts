@@ -31,15 +31,15 @@ serve(async (req) => {
     });
 
     // Verify the token
-    const { data: claims, error: authError } = await supabaseAuth.auth.getUser(token);
-    if (authError || !claims?.user) {
+    const { data: claimsData, error: authError } = await supabaseAuth.auth.getClaims(token);
+    if (authError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claims.user.id;
+    const userId = claimsData.claims.sub;
 
     // Check admin role using service role client
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
