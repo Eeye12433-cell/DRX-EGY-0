@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      guest_order_lookup_attempts: {
+        Row: {
+          attempted_at: string | null
+          id: number
+          ip: string | null
+          token_fingerprint: string | null
+        }
+        Insert: {
+          attempted_at?: string | null
+          id?: number
+          ip?: string | null
+          token_fingerprint?: string | null
+        }
+        Update: {
+          attempted_at?: string | null
+          id?: number
+          ip?: string | null
+          token_fingerprint?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -62,6 +83,7 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          guest_tracking_token_hash: string | null
           id: string
           shipping_address: string | null
           shipping_email: string | null
@@ -76,6 +98,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          guest_tracking_token_hash?: string | null
           id?: string
           shipping_address?: string | null
           shipping_email?: string | null
@@ -90,6 +113,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          guest_tracking_token_hash?: string | null
           id?: string
           shipping_address?: string | null
           shipping_email?: string | null
