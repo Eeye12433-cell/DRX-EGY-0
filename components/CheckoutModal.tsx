@@ -72,7 +72,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setLoading(true);
 
     try {
-      const trackingNumber = `DRX-TRK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      // Generate cryptographically secure tracking token
+      const randomBytes = new Uint8Array(32);
+      crypto.getRandomValues(randomBytes);
+      const trackingToken = Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
+      const trackingNumber = `DRX-TRK-${trackingToken.substring(0, 12).toUpperCase()}`;
       
       const { data: { user } } = await supabase.auth.getUser();
       
