@@ -1,132 +1,137 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const allowedOrigins = [
-  'https://drx-egy1.lovable.app',
-  'https://id-preview--112c979b-b84d-4d24-bb83-104736208893.lovable.app',
-  'http://localhost:5173',
-  'http://localhost:8080',
-];
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get('origin') || '';
-  return {
-    'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-  };
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
 
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
-
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Validate authentication
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Authentication required' }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // 1) Validate auth header
+    const authHeader = req.headers.get("authorization") || "";
+    if (!authHeader.toLowerCase().startsWith("bearer ")) {
+      return jsonResponse({ error: "Authentication required" }, 401);
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+    const token = authHeader.slice("bearer ".length).trim();
+    if (!token) {
+      return jsonResponse({ error: "Authentication required" }, 401);
+    }
+
+    // 2) Create clients
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+      return jsonResponse({ error: "Server misconfigured: missing env vars" }, 500);
+    }
+
+    // Client used ONLY to validate the user token
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: `Bearer ${token}` } },
     });
 
-    // Verify the token
-    const { data: claimsData, error: authError } = await supabaseAuth.auth.getClaims(token);
-    if (authError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Service role for privileged DB operations (bypasses RLS)
+    const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
+
+    // 3) Verify token (robust)
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
+
+    if (userError || !userData?.user?.id) {
+      return jsonResponse({ error: "Invalid or expired token" }, 401);
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = userData.user.id;
 
-    // Check admin role using service role client
-    const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: roleData } = await supabaseService
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .single();
+    // 4) Check admin role
+    const { data: roleData, error: roleError } = await supabaseService
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleError) {
+      console.error("Role check error:", roleError);
+      return jsonResponse({ error: "Server error" }, 500);
+    }
 
     if (!roleData) {
-      return new Response(JSON.stringify({ error: 'Admin access required' }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Admin access required" }, 403);
     }
 
-    const { action, orderId, status } = await req.json();
+    // 5) Parse body safely
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
 
-    const VALID_ORDER_STATUSES = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'];
-    const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const action = body?.action;
 
-    if (action === 'list') {
+    // ✅ Optional: allow UI to "ping" admin verification quickly
+    if (action === "ping") {
+      return jsonResponse({ ok: true, is_admin: true });
+    }
+
+    // 6) Actions
+    if (action === "list") {
       const { data: orders, error } = await supabaseService
-        .from('orders')
-        .select(`
+        .from("orders")
+        .select(
+          `
           *,
           order_items (*)
-        `)
-        .order('created_at', { ascending: false });
+        `
+        )
+        .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Orders list error:", error);
+        return jsonResponse({ error: "Server error" }, 500);
+      }
 
-      return new Response(JSON.stringify({ orders: orders || [] }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ orders: orders || [] }, 200);
     }
 
-    if (action === 'update_status' && orderId && status) {
-      if (!VALID_ORDER_STATUSES.includes(status)) {
-        return new Response(JSON.stringify({ error: 'Invalid order status' }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    if (action === "update_status") {
+      const orderId = body?.orderId;
+      const status = body?.status;
+
+      if (!orderId || !status) {
+        return jsonResponse({ error: "orderId and status are required" }, 400);
       }
-      if (!UUID_PATTERN.test(orderId)) {
-        return new Response(JSON.stringify({ error: 'Invalid order ID format' }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+
       const { error } = await supabaseService
-        .from('orders')
+        .from("orders")
         .update({ status })
-        .eq('id', orderId);
+        .eq("id", orderId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Update status error:", error);
+        return jsonResponse({ error: "Server error" }, 500);
+      }
 
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ success: true }, 200);
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-
+    return jsonResponse({ error: "Invalid action" }, 400);
   } catch (error) {
     console.error("Admin orders error:", error);
-    return new Response(JSON.stringify({ error: 'Server error' }), {
-      status: 500,
-      headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "Server error" }, 500);
   }
 });
