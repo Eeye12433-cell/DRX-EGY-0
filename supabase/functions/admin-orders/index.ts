@@ -71,6 +71,9 @@ serve(async (req) => {
 
     const { action, orderId, status } = await req.json();
 
+    const VALID_ORDER_STATUSES = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'];
+    const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
     if (action === 'list') {
       const { data: orders, error } = await supabaseService
         .from('orders')
@@ -89,6 +92,18 @@ serve(async (req) => {
     }
 
     if (action === 'update_status' && orderId && status) {
+      if (!VALID_ORDER_STATUSES.includes(status)) {
+        return new Response(JSON.stringify({ error: 'Invalid order status' }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (!UUID_PATTERN.test(orderId)) {
+        return new Response(JSON.stringify({ error: 'Invalid order ID format' }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const { error } = await supabaseService
         .from('orders')
         .update({ status })
