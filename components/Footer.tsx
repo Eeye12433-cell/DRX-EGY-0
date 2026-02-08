@@ -4,7 +4,7 @@ const Footer: React.FC<{
 }> = ({
   lang
 }) => {
-  return <footer className="bg-bg-secondary border-t border-drxred/20 py-16">
+  return <footer className="bg-bg-secondary border-t border-drxred/20 py-16 bg-[#050505]">
       <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 text-start">
         <div className="md:col-span-1">
           <h3 className="text-2xl font-black font-oswald text-white mb-4">DRX<span className="text-drxred">EGYPT</span></h3>
@@ -48,7 +48,7 @@ const Footer: React.FC<{
         </div>
       </div>
       <div className="container mx-auto px-6 mt-16 pt-8 border-t border-white/5 text-center">
-        <p className="text-zinc-700 uppercase tracking-[0.5em] font-sans text-sm">
+        <p className="uppercase tracking-[0.5em] font-sans text-sm text-zinc-50">
           © 2026 Nature's Rule Egypt. {lang === 'ar' ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
         </p>
       </div>
