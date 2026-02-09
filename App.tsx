@@ -22,21 +22,121 @@ import { useProducts } from '@/hooks/useProducts';
 import { CurrencyProvider } from '@/contexts/CurrencyContext';
 import { CartProvider } from '@/hooks/useCart';
 
+import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+
 const ContactView: React.FC<{ lang: 'ar' | 'en' }> = ({ lang }) => (
-  <div className="max-w-2xl mx-auto py-20 px-4">
-    <h2 className="text-5xl font-oswald uppercase mb-8 text-center">
-      {lang === 'ar' ? 'تواصل' : 'Contact'}{' '}
-      <span className="text-drxred">{lang === 'ar' ? 'معنا' : 'Us'}</span>
-    </h2>
-    <div className="bg-bg-card border border-white/5 p-10 space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <input type="text" placeholder={lang === 'ar' ? 'الاسم' : 'Name'} className="bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none" />
-        <input type="email" placeholder={lang === 'ar' ? 'الايميل' : 'Email'} className="bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none" />
+  <div className="max-w-6xl mx-auto py-20 px-4">
+    <div className="text-center mb-16">
+      <h2 className="text-6xl font-black font-oswald uppercase tracking-tighter mb-4">
+        {lang === 'ar' ? 'تواصل' : 'Contact'}
+      </h2>
+      <p className="text-zinc-500 font-mono text-xs uppercase tracking-[0.3em]">
+        {lang === 'ar' ? 'ابق على تواصل معنا' : 'Get in touch with us'}
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      {/* Form Container */}
+      <div className="bg-bg-card border border-white/5 p-8 md:p-12 h-full flex flex-col justify-between">
+        <div className="space-y-8">
+          <div className="space-y-2">
+            <label className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-mega block">
+              {lang === 'ar' ? 'الاسم بالكامل' : 'Full name'}
+            </label>
+            <input
+              type="text"
+              placeholder="John Doe"
+              className="w-full bg-bg-primary border-b border-white/10 p-4 font-mono text-sm outline-none focus:border-drxred transition-all"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-mega block">
+              {lang === 'ar' ? 'عنوان البريد الإلكتروني' : 'Email address'}
+            </label>
+            <input
+              type="email"
+              placeholder="john@example.com"
+              className="w-full bg-bg-primary border-b border-white/10 p-4 font-mono text-sm outline-none focus:border-drxred transition-all"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-mega block">
+              {lang === 'ar' ? 'الرسالة' : 'Message'}
+            </label>
+            <textarea
+              rows={4}
+              placeholder={lang === 'ar' ? 'كيف يمكننا مساعدتك؟' : 'How can we help you?'}
+              className="w-full bg-bg-primary border-b border-white/10 p-4 font-mono text-sm outline-none focus:border-drxred transition-all resize-none"
+            ></textarea>
+          </div>
+        </div>
+        <button className="w-full bg-[#f97316] text-white py-5 mt-12 font-bold uppercase tracking-widest text-xs hover:brightness-110 transition-all rounded shadow-lg">
+          {lang === 'ar' ? 'إرسال الرسالة' : 'Send message'}
+        </button>
       </div>
-      <textarea rows={5} placeholder={lang === 'ar' ? 'رسالتك' : 'Message'} className="w-full bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none resize-none"></textarea>
-      <button className="w-full bg-drxred text-white py-4 font-bold uppercase tracking-widest hover:bg-zinc-900 transition-all btn-drx">
-        {lang === 'ar' ? 'إرسال' : 'Send Message'}
-      </button>
+
+      {/* Info Cards Container */}
+      <div className="flex flex-col gap-6">
+        {/* Email Card */}
+        <div className="bg-bg-card border border-white/5 p-8 rounded flex items-center gap-6 group hover:border-drxred/30 transition-all">
+          <div className="p-4 bg-zinc-900 rounded-lg group-hover:bg-drxred/10 transition-all">
+            <Mail className="w-6 h-6 text-orange-500" />
+          </div>
+          <div>
+            <h4 className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-mega block mb-1">
+              {lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+            </h4>
+            <a href="mailto:support@drxegypt.com" className="text-zinc-200 font-bold hover:text-drxred transition-colors">
+              support@drxegypt.com
+            </a>
+          </div>
+        </div>
+
+        {/* WhatsApp Card */}
+        <div className="bg-bg-card border border-white/5 p-8 rounded flex items-center gap-6 group hover:border-drxred/30 transition-all">
+          <div className="p-4 bg-zinc-900 rounded-lg group-hover:bg-drxred/10 transition-all">
+            <Phone className="w-6 h-6 text-green-500" />
+          </div>
+          <div>
+            <h4 className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-mega block mb-1">
+              {lang === 'ar' ? 'دعم الواتساب' : 'WhatsApp Support'}
+            </h4>
+            <a href="https://wa.me/201080011665" target="_blank" rel="noopener noreferrer" className="block text-zinc-200 font-bold hover:text-drxred transition-colors">
+              +20 108 001 1665
+            </a>
+            <span className="text-[9px] text-green-500 uppercase tracking-widest font-bold">
+              {lang === 'ar' ? 'انقر للدردشة معنا!' : 'Click to chat with us!'}
+            </span>
+          </div>
+        </div>
+
+        {/* Headquarters Card */}
+        <div className="bg-bg-card border border-white/5 p-8 rounded flex items-center gap-6 group hover:border-drxred/30 transition-all">
+          <div className="p-4 bg-zinc-900 rounded-lg group-hover:bg-drxred/10 transition-all">
+            <MapPin className="w-6 h-6 text-red-500" />
+          </div>
+          <div>
+            <h4 className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-mega block mb-1">
+              {lang === 'ar' ? 'المقر الرئيسي' : 'Headquarters'}
+            </h4>
+            <p className="text-zinc-200 font-bold">
+              {lang === 'ar' ? 'القاهرة، مصر' : 'Cairo, Egypt'}
+            </p>
+          </div>
+        </div>
+
+        {/* Response Time Card */}
+        <div className="bg-bg-card border border-white/5 p-8 rounded-lg flex flex-col justify-center bg-zinc-900/50">
+          <h4 className="text-[10px] font-mono text-zinc-500 uppercase font-bold tracking-mega block mb-3">
+            {lang === 'ar' ? 'وقت الرد' : 'Response Time'}
+          </h4>
+          <p className="text-xs text-zinc-400 font-mono italic leading-relaxed">
+            {lang === 'ar'
+              ? 'نرد عادةً على جميع الاستفسارات خلال 24-48 ساعة عمل.'
+              : 'We typically respond to all inquiries within 24-48 business hours.'}
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 );
