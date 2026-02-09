@@ -1,0 +1,74 @@
+import { Link, useNavigate } from 'react-router-dom';
+import { Product } from '@/types/product';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Star, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useCurrency } from '@/contexts/CurrencyContext';
+
+interface ProductCardProps {
+  product: Product;
+}
+
+const ProductCard = ({ product }: ProductCardProps) => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { formatPrice } = useCurrency();
+
+  const handleLocateSalesRep = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate('/contact');
+  };
+
+  return (
+    <Link to={`/product/${product.id}`}>
+      <Card className="group overflow-hidden border-white/5 bg-bg-card hover:border-drxred/40 hover:shadow-lg hover:shadow-drxred/5 transition-all">
+        <div className="relative aspect-square overflow-hidden bg-black">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+          />
+          {!product.inStock && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <span className="text-white font-oswald font-bold uppercase tracking-widest">
+                {t('productCard.outOfStock')}
+              </span>
+            </div>
+          )}
+        </div>
+        <CardContent className="p-4">
+          <div className="text-[10px] font-mono text-drxred uppercase tracking-[0.2em] font-bold mb-1">
+            {product.category}
+          </div>
+          <h3 className="font-oswald font-bold text-sm mb-2 line-clamp-2 uppercase leading-tight">
+            {product.name}
+          </h3>
+          <div className="flex items-center mb-2">
+            <Star className="h-4 w-4 fill-primary text-primary" />
+            <span className="text-sm ml-1 font-mono">{product.rating}</span>
+            <span className="text-xs text-muted-foreground ml-1 font-mono">({product.reviews})</span>
+          </div>
+          <div className="text-2xl font-oswald font-bold text-foreground">
+            {formatPrice(product.price)}
+          </div>
+        </CardContent>
+        <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+          <Button
+            className="w-full bg-white text-black hover:bg-drxred hover:text-white font-mono text-xs uppercase tracking-widest"
+            onClick={handleLocateSalesRep}
+          >
+            <MapPin className="h-4 w-4 mr-2" />
+            {t('productCard.locateSalesRep')}
+          </Button>
+          <p className="text-[10px] text-muted-foreground text-center font-mono">
+            {t('productCard.distributorNote')}
+          </p>
+        </CardFooter>
+      </Card>
+    </Link>
+  );
+};
+
+export default ProductCard;

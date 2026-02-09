@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import gsap from 'gsap';
 import { Product, CartItem, Order } from './types';
 import Navbar from './components/Navbar';
@@ -18,6 +19,8 @@ import PerformanceCoach from './components/PerformanceCoach';
 import ComparisonBar from './components/ComparisonBar';
 import ComparisonMatrix from './components/ComparisonMatrix';
 import { useProducts } from '@/hooks/useProducts';
+import { CurrencyProvider } from '@/contexts/CurrencyContext';
+import { CartProvider } from '@/hooks/useCart';
 
 const ContactView: React.FC<{ lang: 'ar' | 'en' }> = ({ lang }) => (
   <div className="max-w-2xl mx-auto py-20 px-4">
@@ -27,22 +30,10 @@ const ContactView: React.FC<{ lang: 'ar' | 'en' }> = ({ lang }) => (
     </h2>
     <div className="bg-bg-card border border-white/5 p-10 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <input
-          type="text"
-          placeholder={lang === 'ar' ? 'الاسم' : 'Name'}
-          className="bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none"
-        />
-        <input
-          type="email"
-          placeholder={lang === 'ar' ? 'الايميل' : 'Email'}
-          className="bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none"
-        />
+        <input type="text" placeholder={lang === 'ar' ? 'الاسم' : 'Name'} className="bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none" />
+        <input type="email" placeholder={lang === 'ar' ? 'الايميل' : 'Email'} className="bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none" />
       </div>
-      <textarea
-        rows={5}
-        placeholder={lang === 'ar' ? 'رسالتك' : 'Message'}
-        className="w-full bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none resize-none"
-      ></textarea>
+      <textarea rows={5} placeholder={lang === 'ar' ? 'رسالتك' : 'Message'} className="w-full bg-bg-primary border border-white/10 p-4 font-mono text-xs focus:border-drxred outline-none resize-none"></textarea>
       <button className="w-full bg-drxred text-white py-4 font-bold uppercase tracking-widest hover:bg-zinc-900 transition-all btn-drx">
         {lang === 'ar' ? 'إرسال' : 'Send Message'}
       </button>
@@ -57,39 +48,22 @@ const PolicyView: React.FC<{ lang: 'ar' | 'en'; type: string }> = ({ lang, type 
     privacy: { ar: 'سياسة الخصوصية', en: 'Privacy Policy' },
     terms: { ar: 'شروط الخدمة', en: 'Terms of Service' },
   };
-
   const title = titles[type] || { ar: 'سياسة', en: 'Policy' };
 
   return (
     <div className="max-w-4xl mx-auto py-20 px-4 prose prose-invert">
-      <h2 className="text-5xl font-oswald uppercase mb-12 text-drxred">
-        {lang === 'ar' ? title.ar : title.en}
-      </h2>
+      <h2 className="text-5xl font-oswald uppercase mb-12 text-drxred">{lang === 'ar' ? title.ar : title.en}</h2>
       <div className="space-y-8 text-zinc-400 font-inter">
         <p className="text-lg leading-relaxed">
-          {lang === 'ar'
-            ? 'نحن في DRX EGYPT نلتزم بأعلى معايير الجودة والشفافية مع عملائنا.'
-            : 'At DRX EGYPT, we are committed to the highest standards of quality and transparency with our customers.'}
+          {lang === 'ar' ? 'نحن في DRX EGYPT نلتزم بأعلى معايير الجودة والشفافية مع عملائنا.' : 'At DRX EGYPT, we are committed to the highest standards of quality and transparency with our customers.'}
         </p>
         <section>
-          <h3 className="text-text-main uppercase font-oswald text-xl mb-4">
-            01. {lang === 'ar' ? 'الالتزام بالجودة' : 'Quality Commitment'}
-          </h3>
-          <p>
-            {lang === 'ar'
-              ? 'جميع منتجاتنا تخضع للفحص والتحقق من الأصالة.'
-              : 'All our products undergo inspection and authenticity verification.'}
-          </p>
+          <h3 className="text-text-main uppercase font-oswald text-xl mb-4">01. {lang === 'ar' ? 'الالتزام بالجودة' : 'Quality Commitment'}</h3>
+          <p>{lang === 'ar' ? 'جميع منتجاتنا تخضع للفحص والتحقق من الأصالة.' : 'All our products undergo inspection and authenticity verification.'}</p>
         </section>
         <section>
-          <h3 className="text-text-main uppercase font-oswald text-xl mb-4">
-            02. {lang === 'ar' ? 'التوزيع الرسمي' : 'Official Distribution'}
-          </h3>
-          <p>
-            {lang === 'ar'
-              ? "Nature's Rule Egypt هي الموزع الرسمي الوحيد في مصر."
-              : "Nature's Rule Egypt is the only official distributor in Egypt."}
-          </p>
+          <h3 className="text-text-main uppercase font-oswald text-xl mb-4">02. {lang === 'ar' ? 'التوزيع الرسمي' : 'Official Distribution'}</h3>
+          <p>{lang === 'ar' ? "Nature's Rule Egypt هي الموزع الرسمي الوحيد في مصر." : "Nature's Rule Egypt is the only official distributor in Egypt."}</p>
         </section>
       </div>
     </div>
@@ -97,11 +71,10 @@ const PolicyView: React.FC<{ lang: 'ar' | 'en'; type: string }> = ({ lang, type 
 };
 
 const App: React.FC = () => {
-  // Products now fetched from database via hook
   const { products, setProducts, loading: productsLoading, refetch: refetchProducts } = useProducts();
-  
+  const { i18n } = useTranslation();
+
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [viewHistory, setViewHistory] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -114,88 +87,53 @@ const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load persisted state (only non-sensitive data - NOT products, those come from DB)
+  // Sync lang with i18n
+  useEffect(() => {
+    i18n.changeLanguage(lang);
+  }, [lang, i18n]);
+
   useEffect(() => {
     const savedTheme = localStorage.getItem('drx-theme');
     if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);
-
     const savedLang = localStorage.getItem('drx-lang');
     if (savedLang === 'ar' || savedLang === 'en') setLang(savedLang);
-
     const savedCart = localStorage.getItem('drx-cart');
     if (savedCart) setCart(JSON.parse(savedCart));
-
-    const savedViewHistory = localStorage.getItem('drx-view-history');
-    if (savedViewHistory) setViewHistory(JSON.parse(savedViewHistory));
   }, []);
 
-  // Persist state + apply theme/lang to root (products NOT stored in localStorage anymore)
   useEffect(() => {
     localStorage.setItem('drx-cart', JSON.stringify(cart));
     localStorage.setItem('drx-theme', theme);
     localStorage.setItem('drx-lang', lang);
-    localStorage.setItem('drx-view-history', JSON.stringify(viewHistory));
-
     const root = document.documentElement;
     root.classList.remove('dark', 'light');
     root.classList.add(theme);
     root.lang = lang;
     root.dir = lang === 'ar' ? 'rtl' : 'ltr';
-  }, [cart, theme, lang, viewHistory]);
-
-  // Track product views
-  useEffect(() => {
-    const pathParts = location.pathname.split('/');
-    if (pathParts[1] === 'product' && pathParts[2]) {
-      const productId = pathParts[2];
-      setViewHistory((prev) => {
-        if (prev.includes(productId)) return prev;
-        return [productId, ...prev].slice(0, 10);
-      });
-    }
-  }, [location.pathname]);
+  }, [cart, theme, lang]);
 
   useEffect(() => {
-    gsap.fromTo(
-      '.page-content',
-      { opacity: 0, y: 10 },
-      { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
-    );
+    gsap.fromTo('.page-content', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' });
   }, [location.pathname]);
 
   const addToCart = (product: Product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) {
-        return prev.map((item) =>
-          item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
+      if (existing) return prev.map((item) => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
       return [...prev, { product, quantity: 1 }];
     });
     setIsCartOpen(true);
   };
 
-  const removeFromCart = (productId: string) =>
-    setCart((prev) => prev.filter((item) => item.product.id !== productId));
+  const removeFromCart = (productId: string) => setCart((prev) => prev.filter((item) => item.product.id !== productId));
 
   const updateQuantity = (productId: string, delta: number) => {
-    setCart((prev) =>
-      prev
-        .map((item) => {
-          if (item.product.id === productId) {
-            return { ...item, quantity: Math.max(0, item.quantity + delta) };
-          }
-          return item;
-        })
-        .filter((item) => item.quantity > 0)
-    );
+    setCart((prev) => prev.map((item) => item.product.id === productId ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item).filter((item) => item.quantity > 0));
   };
 
   const clearCart = () => window.confirm(lang === 'ar' ? 'هل تريد إفراغ السلة؟' : 'Clear entire cart?') && setCart([]);
 
   const handleOrderComplete = (newOrder: Order) => {
-    // Orders are now saved directly to Supabase database
     setCart([]);
     setIsCheckoutOpen(false);
     setIsCartOpen(false);
@@ -206,141 +144,61 @@ const App: React.FC = () => {
     setCompareList((prev) =>
       prev.find((p) => p.id === product.id)
         ? prev.filter((p) => p.id !== product.id)
-        : prev.length < 4
-        ? [...prev, product]
-        : prev
+        : prev.length < 4 ? [...prev, product] : prev
     );
   };
 
-  const viewHistoryNames = useMemo(() => {
-    return viewHistory
-      .map((id) => products.find((p) => p.id === id)?.name_en)
-      .filter(Boolean) as string[];
-  }, [viewHistory, products]);
-
   return (
-    <div className="min-h-screen font-inter overflow-x-hidden selection:bg-drxred selection:text-white bg-bg-primary text-text-main">
-      <Navbar
-        onMenuClick={() => setIsSidebarOpen(true)}
-        onCartClick={() => setIsCartOpen(true)}
-        cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-        lang={lang}
-        setLang={setLang}
-        theme={theme}
-        setTheme={setTheme}
-        onAdminClick={() => navigate('/admin')}
-      />
+    <CurrencyProvider>
+      <CartProvider>
+        <div className="min-h-screen font-inter overflow-x-hidden selection:bg-drxred selection:text-white bg-bg-primary text-text-main">
+          <Navbar
+            onMenuClick={() => setIsSidebarOpen(true)}
+            onCartClick={() => setIsCartOpen(true)}
+            cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
+            lang={lang}
+            setLang={setLang}
+            theme={theme}
+            setTheme={setTheme}
+            onAdminClick={() => navigate('/admin')}
+          />
 
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        lang={lang}
-        onNavigate={(path) => {
-          navigate(path);
-          setIsSidebarOpen(false);
-        }}
-      />
+          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} lang={lang} onNavigate={(path) => { navigate(path); setIsSidebarOpen(false); }} />
 
-      <CartPanel
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cart={cart}
-        onRemove={removeFromCart}
-        onUpdateQuantity={updateQuantity}
-        onClear={clearCart}
-        lang={lang}
-        onCheckout={() => setIsCheckoutOpen(true)}
-      />
+          <CartPanel isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} onRemove={removeFromCart} onUpdateQuantity={updateQuantity} onClear={clearCart} lang={lang} onCheckout={() => setIsCheckoutOpen(true)} />
 
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        cart={cart}
-        lang={lang}
-        onOrderComplete={handleOrderComplete}
-      />
+          <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} cart={cart} lang={lang} onOrderComplete={handleOrderComplete} />
 
-      <PerformanceCoach isOpen={isCoachOpen} onClose={() => setIsCoachOpen(false)} lang={lang} />
+          <PerformanceCoach isOpen={isCoachOpen} onClose={() => setIsCoachOpen(false)} lang={lang} />
 
-      <ComparisonBar
-        items={compareList}
-        onRemove={(id) => setCompareList((prev) => prev.filter((p) => p.id !== id))}
-        onCompare={() => setIsMatrixOpen(true)}
-        lang={lang}
-      />
-      {isMatrixOpen && (
-        <ComparisonMatrix products={compareList} onClose={() => setIsMatrixOpen(false)} lang={lang} />
-      )}
+          <ComparisonBar items={compareList} onRemove={(id) => setCompareList((prev) => prev.filter((p) => p.id !== id))} onCompare={() => setIsMatrixOpen(true)} lang={lang} />
+          {isMatrixOpen && <ComparisonMatrix products={compareList} onClose={() => setIsMatrixOpen(false)} lang={lang} />}
 
-      <button
-        onClick={() => setIsCoachOpen(true)}
-        className="fixed bottom-8 right-8 z-[350] w-16 h-16 bg-drxred text-white rounded-full shadow-[0_0_30px_#e11d48] flex items-center justify-center hover:scale-110 transition-transform animate-bounce"
-      >
-        <span className="text-2xl">🤖</span>
-      </button>
+          <button onClick={() => setIsCoachOpen(true)} className="fixed bottom-8 right-8 z-[350] w-16 h-16 bg-drxred text-white rounded-full shadow-[0_0_30px_#e11d48] flex items-center justify-center hover:scale-110 transition-transform animate-bounce">
+            <span className="text-2xl">🤖</span>
+          </button>
 
-      <main className="pt-24 min-h-[calc(100vh-100px)]">
-        <div className="page-content container mx-auto px-4 md:px-8">
-          <Routes>
-            <Route path="/" element={<Home lang={lang} />} />
-            <Route
-              path="/shop"
-              element={
-                <Shop
-                  lang={lang}
-                  products={products}
-                  setProducts={setProducts}
-                  addToCart={addToCart}
-                  onCompare={toggleCompare}
-                  compareList={compareList}
-                  cart={cart}
-                  viewHistoryNames={viewHistoryNames}
-                  purchaseHistoryNames={[]}
-                />
-              }
-            />
-            <Route
-              path="/shop/:mode"
-              element={
-                <Shop
-                  lang={lang}
-                  products={products}
-                  setProducts={setProducts}
-                  addToCart={addToCart}
-                  onCompare={toggleCompare}
-                  compareList={compareList}
-                  cart={cart}
-                  viewHistoryNames={viewHistoryNames}
-                  purchaseHistoryNames={[]}
-                />
-              }
-            />
-            <Route
-              path="/product/:id"
-              element={<ProductDetailView lang={lang} products={products} setProducts={setProducts} addToCart={addToCart} />}
-            />
-            <Route path="/calculator" element={<CalculatorView lang={lang} />} />
-            <Route path="/verify" element={<VerifyView lang={lang} />} />
-            <Route path="/track" element={<TrackOrderView lang={lang} />} />
-            <Route path="/contact" element={<ContactView lang={lang} />} />
-            <Route
-              path="/admin"
-              element={
-                <AdminPanel
-                  lang={lang}
-                  products={products}
-                  setProducts={setProducts}
-                  refetchProducts={refetchProducts}
-                />
-              }
-            />
-            <Route path="/policies/:type" element={<PolicyView lang={lang} type={location.pathname.split('/').pop() || ''} />} />
-          </Routes>
+          <main className="pt-24 min-h-[calc(100vh-100px)]">
+            <div className="page-content container mx-auto px-4 md:px-8">
+              <Routes>
+                <Route path="/" element={<Home lang={lang} />} />
+                <Route path="/shop" element={<Shop />} />
+                <Route path="/shop/:mode" element={<Shop />} />
+                <Route path="/product/:id" element={<ProductDetailView />} />
+                <Route path="/calculator" element={<CalculatorView lang={lang} />} />
+                <Route path="/verify" element={<VerifyView lang={lang} />} />
+                <Route path="/track" element={<TrackOrderView lang={lang} />} />
+                <Route path="/contact" element={<ContactView lang={lang} />} />
+                <Route path="/admin" element={<AdminPanel lang={lang} products={products} setProducts={setProducts} refetchProducts={refetchProducts} />} />
+                <Route path="/policies/:type" element={<PolicyView lang={lang} type={location.pathname.split('/').pop() || ''} />} />
+              </Routes>
+            </div>
+          </main>
+
+          <Footer lang={lang} />
         </div>
-      </main>
-
-      <Footer lang={lang} />
-    </div>
+      </CartProvider>
+    </CurrencyProvider>
   );
 };
 

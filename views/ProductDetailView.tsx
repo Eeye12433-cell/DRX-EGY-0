@@ -1,177 +1,25 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Product, Review } from '../types';
-import StarRating from '../components/StarRating';
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import VerifyProductModal from '@/components/VerifyProductModal';
+import { useTranslation } from 'react-i18next';
+import { products } from '@/data/products';
+import { useCart } from '@/hooks/useCart';
+import { Star, ArrowLeft, MapPin } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import gsap from 'gsap';
 
-interface ProductDetailViewProps {
-  lang: 'ar' | 'en';
-  products: Product[];
-  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
-  addToCart: (p: Product) => void;
-}
-
-type SupplyMode = 'single' | 'auto';
-
-// Local extension to avoid unsafe casting (no need to change Product type right now)
-type ProductWithSubscription = Product & {
-  subscription?: number;
-};
-
-const ProductImage: React.FC<{ product: Product }> = ({ product }) => {
-  const imageUrl = (product as any).imageUrl || product.image;
-
-  const handleImageError = useCallback((e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    const img = e.currentTarget;
-    // fallback to base image if the URL fails
-    if (product.image && img.src !== product.image) {
-      img.src = product.image;
-    }
-  }, [product.image]);
-
-  return (
-    <div className="aspect-square bg-black border border-white/5 relative overflow-hidden group">
-      <img
-        src={imageUrl}
-        className="w-full h-full object-contain"
-        alt={product.name_en}
-        onError={handleImageError}
-      />
-    </div>
-  );
-};
-
-const ProductHeader: React.FC<{ lang: 'ar' | 'en'; product: Product }> = ({ lang, product }) => (
-  <div className="space-y-4">
-    <span className="text-[10px] font-mono text-drxred uppercase tracking-mega font-black border-b border-drxred/20 pb-1">
-      Registry: {product.id.toUpperCase()}
-    </span>
-
-    <h1 className="text-5xl font-black font-oswald uppercase leading-[0.85] tracking-tighter text-justify lg:text-base">
-      {lang === 'ar' ? product.name_ar : product.name_en}
-    </h1>
-
-    <div className="flex items-end gap-6 pt-4">
-      <span className="text-5xl font-oswald text-white font-bold">
-        {product.price.toLocaleString()} <span className="text-2xl font-oswald">LE</span>
-      </span>
-      <span className="text-xs font-mono text-zinc-600 uppercase mb-2">/ Matrix Unit</span>
-    </div>
-  </div>
-);
-
-const SupplyOptions: React.FC<{
-  supplyMode: SupplyMode;
-  setSupplyMode: React.Dispatch<React.SetStateAction<SupplyMode>>;
-  frequency: number;
-  setFrequency: React.Dispatch<React.SetStateAction<number>>;
-}> = ({ supplyMode, setSupplyMode, frequency, setFrequency }) => (
-  <div className="p-8 bg-bg-card border border-white/10 space-y-6">
-    <h4 className="text-[10px] font-mono text-zinc-500 uppercase tracking-mega">Strategic Supply Options</h4>
-
-    <div className="grid grid-cols-2 gap-4">
-      <button
-        type="button"
-        onClick={() => setSupplyMode('single')}
-        className={`p-4 border font-mono text-[9px] uppercase transition-all ${
-          supplyMode === 'single' ? 'bg-white text-black border-white' : 'bg-black border-white/10 text-zinc-500'
-        }`}
-      >
-        Single Deployment
-      </button>
-
-      <button
-        type="button"
-        onClick={() => setSupplyMode('auto')}
-        className={`p-4 border font-mono text-[9px] uppercase transition-all ${
-          supplyMode === 'auto' ? 'bg-drxred border-drxred text-white' : 'bg-black border-white/10 text-zinc-500'
-        }`}
-      >
-        Tactical Re-supply (Save 10%)
-      </button>
-    </div>
-
-    {supplyMode === 'auto' && (
-      <div className="space-y-3 pt-4 border-t border-white/5 animate-in slide-in-from-top-2">
-        <label className="text-[9px] font-mono text-zinc-600 uppercase">Frequency Registry</label>
-        <div className="flex gap-2">
-          {[30, 60, 90].map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFrequency(f)}
-              className={`px-4 py-2 text-[10px] border transition-all ${
-                frequency === f ? 'bg-white text-black' : 'border-white/10 text-zinc-500'
-              }`}
-            >
-              Every {f} Days
-            </button>
-          ))}
-        </div>
-      </div>
-    )}
-  </div>
-);
-
-/** ✅ NEW: Product Description Section */
-const ProductDescription: React.FC<{ lang: 'ar' | 'en'; product: Product }> = ({ lang, product }) => {
-  // supports description_ar/description_en with fallback
-  const desc =
-    lang === 'ar'
-      ? ((product as any).description_ar || (product as any).description_en || '')
-      : ((product as any).description_en || (product as any).description_ar || '');
-
-  if (!desc) {
-    return (
-      <div className="p-8 bg-bg-card border border-white/10 space-y-4">
-        <h4 className="text-[10px] font-mono text-zinc-500 uppercase tracking-mega">
-          {lang === 'ar' ? 'الوصف التفصيلي' : 'Detailed Description'}
-        </h4>
-        <p className="text-sm text-zinc-400 leading-relaxed">
-          {lang === 'ar' ? 'لا يوجد وصف متاح حالياً.' : 'No description available yet.'}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-8 bg-bg-card border border-white/10 space-y-4">
-      <h4 className="text-[10px] font-mono text-zinc-500 uppercase tracking-mega">
-        {lang === 'ar' ? 'الوصف التفصيلي' : 'Detailed Description'}
-      </h4>
-
-      <div className="relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 h-full bg-drxred/60"></div>
-        <p className="pl-6 text-sm text-zinc-200 leading-relaxed whitespace-pre-line">
-          {desc}
-        </p>
-      </div>
-    </div>
-  );
-};
-
-const ProductDetailView: React.FC<ProductDetailViewProps> = ({
-  lang,
-  products,
-  setProducts,
-  addToCart
-}) => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-
-  // ✅ Strong typing + safety
-  if (!id) return null;
-
-  const [supplyMode, setSupplyMode] = useState<SupplyMode>('single');
-  const [frequency, setFrequency] = useState<number>(30);
-
-  const product = useMemo(() => products.find(p => p.id === id), [products, id]);
-
-  // review states kept as-is (even if not used yet)
-  const [reviewName, setReviewName] = useState<string>('');
-  const [reviewRating, setReviewRating] = useState<number>(5);
-  const [reviewComment, setReviewComment] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+const ProductDetailView = () => {
+  const { id } = useParams();
+  const product = products.find((p) => p.id === id);
+  const { addToCart } = useCart();
+  const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState<string>();
+  const [selectedFlavor, setSelectedFlavor] = useState<string>();
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const { t } = useTranslation();
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -182,61 +30,181 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({
     );
   }, [id]);
 
-  if (!product) return null;
+  if (!product) {
+    return (
+      <div className="container py-16 text-center">
+        <h1 className="text-3xl font-oswald font-bold mb-4 uppercase">Product Not Found</h1>
+        <Link to="/shop">
+          <Button>Return to Shop</Button>
+        </Link>
+      </div>
+    );
+  }
 
-  // ✅ No "as Product" casting, and no need to modify Product type yet
-  const handleDeploy = () => {
-    const pWithSubscription: ProductWithSubscription = {
-      ...product,
-      subscription: supplyMode === 'auto' ? frequency : undefined
-    };
-    addToCart(pWithSubscription);
+  const handleAddToCart = () => {
+    addToCart(product, quantity, selectedSize, selectedFlavor);
   };
 
   return (
     <div className="container mx-auto px-4 py-12 md:py-20 max-w-7xl">
-      {/* ✅ Back */}
-      <div className="detail-anim mb-8 flex items-center justify-between gap-6">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="px-6 py-3 border border-white/10 text-zinc-300 hover:border-white/30 transition-all font-mono text-xs uppercase"
+      {/* Back */}
+      <div className="detail-anim mb-8">
+        <Link
+          to="/shop"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground font-mono uppercase tracking-widest"
         >
-          {lang === 'ar' ? 'رجوع' : 'Back'}
-        </button>
-
-        <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-mega">
-          {lang === 'ar' ? 'صفحة تفاصيل المنتج' : 'Product Detail View'}
-        </span>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {t('product.backToShop', { defaultValue: 'Back to Shop' })}
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
-        <div className="detail-anim">
-          <ProductImage product={product} />
+      <div className="grid md:grid-cols-2 gap-12 lg:gap-20">
+        {/* Product Image */}
+        <div className="detail-anim aspect-square bg-black border border-white/5 overflow-hidden">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        <div className="detail-anim space-y-12">
-          <ProductHeader lang={lang} product={product} />
-
-          {/* ✅ NEW: Show detailed description here */}
-          <ProductDescription lang={lang} product={product} />
-
-          <SupplyOptions
-            supplyMode={supplyMode}
-            setSupplyMode={setSupplyMode}
-            frequency={frequency}
-            setFrequency={setFrequency}
-          />
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              type="button"
-              onClick={handleDeploy}
-              className="btn-drx flex-1 bg-white text-black py-5 font-black uppercase tracking-[0.4em] text-xs hover:bg-drxred hover:text-white transition-all shadow-2xl"
-            >
-              Execute Deployment
-            </button>
+        {/* Product Info */}
+        <div className="detail-anim space-y-6">
+          <div className="text-[10px] font-mono text-drxred uppercase tracking-[0.2em] font-bold">
+            {product.category}
           </div>
+          <h1 className="text-5xl font-oswald font-black uppercase leading-[0.9] tracking-tighter">
+            {product.name}
+          </h1>
+
+          {/* Rating */}
+          <div className="flex items-center">
+            <div className="flex">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-5 w-5 ${
+                    i < Math.floor(product.rating)
+                      ? 'fill-primary text-primary'
+                      : 'text-muted-foreground'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="ml-2 text-sm font-mono">
+              {product.rating} ({product.reviews} reviews)
+            </span>
+          </div>
+
+          {/* Price */}
+          <div className="flex items-end gap-4">
+            <span className="text-5xl font-oswald text-foreground font-bold">
+              {formatPrice(product.price)}
+            </span>
+          </div>
+
+          {/* Description */}
+          <div className="p-6 bg-bg-card border border-white/10">
+            <div className="relative">
+              <div className="absolute top-0 left-0 w-1 h-full bg-drxred/60"></div>
+              <p className="pl-6 text-sm text-muted-foreground leading-relaxed">
+                {product.description}
+              </p>
+            </div>
+          </div>
+
+          {/* Size Selection */}
+          {product.sizes && product.sizes.length > 0 && (
+            <div>
+              <label className="block text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em] font-bold mb-2">
+                Size
+              </label>
+              <Select value={selectedSize} onValueChange={setSelectedSize}>
+                <SelectTrigger className="bg-background border-white/10">
+                  <SelectValue placeholder="Select size" />
+                </SelectTrigger>
+                <SelectContent>
+                  {product.sizes.map((size) => (
+                    <SelectItem key={size} value={size}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Flavor Selection */}
+          {product.flavors && product.flavors.length > 0 && (
+            <div>
+              <label className="block text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em] font-bold mb-2">
+                Flavor
+              </label>
+              <Select value={selectedFlavor} onValueChange={setSelectedFlavor}>
+                <SelectTrigger className="bg-background border-white/10">
+                  <SelectValue placeholder="Select flavor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {product.flavors.map((flavor) => (
+                    <SelectItem key={flavor} value={flavor}>
+                      {flavor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Quantity */}
+          <div>
+            <label className="block text-[10px] font-mono text-muted-foreground uppercase tracking-[0.2em] font-bold mb-2">
+              Quantity
+            </label>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="border-white/10"
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              >
+                -
+              </Button>
+              <span className="w-12 text-center font-mono">{quantity}</span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="border-white/10"
+                onClick={() => setQuantity(quantity + 1)}
+              >
+                +
+              </Button>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <Button
+              onClick={handleAddToCart}
+              size="lg"
+              className="flex-1 bg-white text-black hover:bg-drxred hover:text-white font-mono text-xs uppercase tracking-[0.2em]"
+            >
+              {t('product.addToCart', { defaultValue: 'Add to cart' })}
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setVerifyOpen(true)}
+              className="flex-1 text-xs sm:text-sm font-mono uppercase border-white/10"
+            >
+              {t('verification.button.label', { defaultValue: 'Verify Product' })}
+            </Button>
+          </div>
+
+          <VerifyProductModal
+            productId={product.id}
+            open={verifyOpen}
+            onOpenChange={setVerifyOpen}
+          />
         </div>
       </div>
     </div>
