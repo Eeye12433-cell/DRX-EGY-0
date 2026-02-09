@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
 import ProductCard from '@/components/ProductCard';
-import { products, categories } from '@/data/products';
+import { CATEGORIES } from '../constants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
+import { useProducts } from '@/hooks/useProducts';
 
 const Shop = () => {
+  const { products, loading } = useProducts();
   const [selectedCategory, setSelectedCategory] = useState('All Products');
   const [searchQuery, setSearchQuery] = useState('');
   const { t } = useTranslation();
@@ -19,7 +21,8 @@ const Shop = () => {
 
     if (searchQuery.trim() !== '') {
       result = result.filter((p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+        p.name_en.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.name_ar.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -35,9 +38,9 @@ const Shop = () => {
         </h1>
         <p className="text-xs font-mono text-muted-foreground uppercase tracking-[0.3em]">
           {t('shop.showing', { defaultValue: 'Showing' })}{' '}
-          <span className="font-bold text-foreground">{filteredProducts.length}</span>{' '}
+          <span className="font-bold text-foreground">{loading ? '...' : filteredProducts.length}</span>{' '}
           {t('shop.of', { defaultValue: 'of' })}{' '}
-          <span className="font-bold text-foreground">{products.length}</span>{' '}
+          <span className="font-bold text-foreground">{loading ? '...' : products.length}</span>{' '}
           {t('shop.products', { defaultValue: 'products' })}
         </p>
       </div>
@@ -67,16 +70,15 @@ const Shop = () => {
               Registry Filter
             </label>
             <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
+              {CATEGORIES.map((category) => (
                 <Button
                   key={category}
                   variant={selectedCategory === category ? 'default' : 'outline'}
                   onClick={() => setSelectedCategory(category)}
-                  className={`font-mono text-xs uppercase tracking-widest ${
-                    selectedCategory === category
-                      ? 'bg-drxred border-drxred text-white shadow-lg'
-                      : 'border-white/10 text-muted-foreground hover:border-white/30'
-                  }`}
+                  className={`font-mono text-xs uppercase tracking-widest ${selectedCategory === category
+                    ? 'bg-drxred border-drxred text-white shadow-lg'
+                    : 'border-white/10 text-muted-foreground hover:border-white/30'
+                    }`}
                 >
                   {t(category)}
                 </Button>
@@ -87,7 +89,13 @@ const Shop = () => {
       </div>
 
       {/* Products Grid */}
-      {filteredProducts.length > 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="aspect-[3/4] bg-bg-card animate-pulse border border-white/5" />
+          ))}
+        </div>
+      ) : filteredProducts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />

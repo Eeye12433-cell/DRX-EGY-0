@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { products } from '@/data/products';
+import { useProducts } from '@/hooks/useProducts';
 import { useCart } from '@/hooks/useCart';
 import { Star, ArrowLeft, MapPin } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,13 +11,15 @@ import gsap from 'gsap';
 
 const ProductDetailView = () => {
   const { id } = useParams();
+  const { products, loading } = useProducts();
   const product = products.find((p) => p.id === id);
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string>();
   const [selectedFlavor, setSelectedFlavor] = useState<string>();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatPrice } = useCurrency();
+  const currentLang = i18n.language as 'ar' | 'en';
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -28,16 +30,28 @@ const ProductDetailView = () => {
     );
   }, [id]);
 
+  if (loading) {
+    return (
+      <div className="container py-32 flex flex-col items-center justify-center space-y-4">
+        <div className="w-12 h-12 border-4 border-drxred border-t-transparent rounded-full animate-spin" />
+        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground animate-pulse">Loading Product Data...</p>
+      </div>
+    );
+  }
+
   if (!product) {
     return (
       <div className="container py-16 text-center">
         <h1 className="text-3xl font-oswald font-bold mb-4 uppercase">Product Not Found</h1>
         <Link to="/shop">
-          <Button>Return to Shop</Button>
+          <Button variant="outline" className="font-mono uppercase tracking-widest">Return to Shop</Button>
         </Link>
       </div>
     );
   }
+
+  const name = currentLang === 'ar' ? product.name_ar : product.name_en;
+  const description = currentLang === 'ar' ? product.description_ar : product.description_en;
 
   const handleAddToCart = () => {
     addToCart(product, quantity, selectedSize, selectedFlavor);
@@ -61,7 +75,7 @@ const ProductDetailView = () => {
         <div className="detail-anim aspect-square bg-black border border-white/5 overflow-hidden">
           <img
             src={product.image}
-            alt={product.name}
+            alt={name}
             className="w-full h-full object-cover"
           />
         </div>
@@ -72,7 +86,7 @@ const ProductDetailView = () => {
             {product.category}
           </div>
           <h1 className="text-5xl font-oswald font-black uppercase leading-[0.9] tracking-tighter">
-            {product.name}
+            {name}
           </h1>
 
           {/* Rating */}
@@ -82,8 +96,8 @@ const ProductDetailView = () => {
                 <Star
                   key={i}
                   className={`h-5 w-5 ${i < Math.floor(product.rating)
-                      ? 'fill-primary text-primary'
-                      : 'text-muted-foreground'
+                    ? 'fill-primary text-primary'
+                    : 'text-muted-foreground'
                     }`}
                 />
               ))}
@@ -105,7 +119,7 @@ const ProductDetailView = () => {
             <div className="relative">
               <div className="absolute top-0 left-0 w-1 h-full bg-drxred/60"></div>
               <p className="pl-6 text-sm text-muted-foreground leading-relaxed">
-                {product.description}
+                {description}
               </p>
             </div>
           </div>

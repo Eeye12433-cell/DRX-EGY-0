@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Product } from '@/types/product';
+import { Product } from '../../types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Star, ShoppingCart } from 'lucide-react';
@@ -12,7 +12,9 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const currentLang = i18n.language as 'ar' | 'en';
+  const name = currentLang === 'ar' ? product.name_ar : product.name_en;
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
 
@@ -28,7 +30,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <div className="relative aspect-square overflow-hidden bg-black">
           <img
             src={product.image}
-            alt={product.name}
+            alt={name}
             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
           />
           {!product.inStock && (
@@ -44,7 +46,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             {product.category}
           </div>
           <h3 className="font-oswald font-bold text-sm mb-2 line-clamp-2 uppercase leading-tight">
-            {product.name}
+            {name}
           </h3>
           <div className="flex items-center mb-2">
             <Star className="h-4 w-4 fill-primary text-primary" />
