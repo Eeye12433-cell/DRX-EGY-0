@@ -39,7 +39,10 @@ export interface Product {
   isBestSeller: boolean;
   featured: number;
   goals: string[];
-  reviews?: Review[];
+  sizes?: string[];
+  flavors?: string[];
+  rating?: number;
+  reviews?: number; // count
 }
 
 export interface CartItem {

@@ -2,20 +2,21 @@ import React, { useState } from 'react';
 import { CartItem, ShippingInfo, Order, OrderStatus } from '../types';
 import { validateShippingForm, ShippingFormData } from '../src/lib/validations';
 import { supabase } from '@/integrations/supabase/client';
+import { useCart } from '@/hooks/useCart';
 
 type PaymentMethod = 'cod' | 'vodafone_cash' | 'instapay' | 'fawry';
 
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
-  cart: CartItem[];
   lang: 'ar' | 'en';
   onOrderComplete: (order: Order) => void;
 }
 
-const CheckoutModal: React.FC<CheckoutModalProps> = ({ 
-  isOpen, onClose, cart, lang, onOrderComplete 
+const CheckoutModal: React.FC<CheckoutModalProps> = ({
+  isOpen, onClose, lang, onOrderComplete
 }) => {
+  const { cart, clearCart } = useCart();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -56,7 +57,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       };
 
       const validation = validateShippingForm(formData);
-      
+
       if (!validation.success) {
         setErrors(validation.errors);
         return;
@@ -77,9 +78,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       crypto.getRandomValues(randomBytes);
       const trackingToken = Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
       const trackingNumber = `DRX-TRK-${trackingToken.substring(0, 12).toUpperCase()}`;
-      
+
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -121,7 +122,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         status: OrderStatus.Pending,
         createdAt: new Date().toISOString()
       };
-      
+
+      clearCart();
       onOrderComplete(newOrder);
       setCompletedOrder(newOrder);
       setLoading(false);
@@ -190,10 +192,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'الاسم الكامل' : 'Full Name'}</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred ${errors.fullName ? 'border-red-500' : 'border-white/10'}`}
-                    value={shipping.fullName} 
+                    value={shipping.fullName}
                     onChange={e => handleInputChange('fullName', e.target.value)}
                     maxLength={100}
                   />
@@ -201,10 +203,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
                 <div className="space-y-1">
                   <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</label>
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred ${errors.phone ? 'border-red-500' : 'border-white/10'}`}
-                    value={shipping.phone} 
+                    value={shipping.phone}
                     onChange={e => handleInputChange('phone', e.target.value)}
                     maxLength={20}
                     placeholder="01xxxxxxxxx"
@@ -214,10 +216,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'البريد الإلكتروني' : 'Email Address'} ({lang === 'ar' ? 'اختياري' : 'Optional'})</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred ${errors.email ? 'border-red-500' : 'border-white/10'}`}
-                  value={shipping.email} 
+                  value={shipping.email}
                   onChange={e => handleInputChange('email', e.target.value)}
                   maxLength={255}
                 />
@@ -227,7 +229,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="space-y-4 pt-4">
                 <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'طريقة التوصيل' : 'Delivery Method'}</label>
                 <div className="grid grid-cols-2 gap-4">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => handleInputChange('method', 'delivery')}
                     className={`p-4 border font-mono text-[10px] uppercase transition-all ${shipping.method === 'delivery' ? 'bg-drxred border-drxred text-white' : 'bg-black border-white/5 text-zinc-600 hover:border-white/20'}`}
@@ -235,7 +237,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     🚚 {lang === 'ar' ? 'توصيل للمنزل' : 'Home Delivery'}
                     <span className="block text-[8px] mt-1 opacity-70">+50 LE</span>
                   </button>
-                  <button 
+                  <button
                     type="button"
                     onClick={() => handleInputChange('method', 'pickup')}
                     className={`p-4 border font-mono text-[10px] uppercase transition-all ${shipping.method === 'pickup' ? 'bg-drxred border-drxred text-white' : 'bg-black border-white/5 text-zinc-600 hover:border-white/20'}`}
@@ -264,10 +266,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </div>
                   <div className="space-y-1">
                     <label className="text-[9px] font-mono text-zinc-500 uppercase">{lang === 'ar' ? 'العنوان بالتفصيل' : 'Full Address'}</label>
-                    <textarea 
-                      rows={3} 
+                    <textarea
+                      rows={3}
                       className={`w-full bg-black border p-3 text-sm outline-none focus:border-drxred resize-none ${errors.address ? 'border-red-500' : 'border-white/10'}`}
-                      value={shipping.address} 
+                      value={shipping.address}
                       onChange={e => handleInputChange('address', e.target.value)}
                       maxLength={500}
                       placeholder={lang === 'ar' ? 'الشارع، المبنى، الطابق، الشقة' : 'Street, Building, Floor, Apartment'}
@@ -321,11 +323,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       key={method.id}
                       type="button"
                       onClick={() => setPaymentMethod(method.id)}
-                      className={`w-full p-4 border text-left transition-all flex items-start gap-4 ${
-                        paymentMethod === method.id 
-                          ? 'bg-drxred/10 border-drxred' 
+                      className={`w-full p-4 border text-left transition-all flex items-start gap-4 ${paymentMethod === method.id
+                          ? 'bg-drxred/10 border-drxred'
                           : 'bg-black border-white/10 hover:border-white/30'
-                      }`}
+                        }`}
                     >
                       <span className="text-2xl">{method.icon}</span>
                       <div className="flex-1">
@@ -334,9 +335,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         </div>
                         <div className="text-[10px] text-zinc-500 mt-1">{method.desc}</div>
                       </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        paymentMethod === method.id ? 'border-drxred' : 'border-zinc-600'
-                      }`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === method.id ? 'border-drxred' : 'border-zinc-600'
+                        }`}>
                         {paymentMethod === method.id && <div className="w-2.5 h-2.5 rounded-full bg-drxred" />}
                       </div>
                     </button>
@@ -352,7 +352,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </p>
                   <p className="text-zinc-400 text-sm">
                     {paymentMethod === 'vodafone_cash' && (
-                      lang === 'ar' 
+                      lang === 'ar'
                         ? 'قم بتحويل المبلغ الإجمالي على رقم فودافون كاش: 01012345678 ثم أرسل صورة التحويل على واتساب'
                         : 'Transfer the total amount to Vodafone Cash: 01012345678, then send the transfer screenshot via WhatsApp'
                     )}
@@ -372,8 +372,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               {/* Confirm Order */}
               <form onSubmit={processOrder} className="space-y-4">
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={loading}
                   className="w-full bg-drxred text-white py-5 font-black uppercase tracking-[0.2em] text-sm hover:bg-white hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -384,7 +384,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </span>
                   ) : (
                     <>
-                      {paymentMethod === 'cod' 
+                      {paymentMethod === 'cod'
                         ? (lang === 'ar' ? `تأكيد الطلب - الدفع عند الاستلام` : `Confirm Order - Pay on Delivery`)
                         : (lang === 'ar' ? `تأكيد الطلب - ${total.toLocaleString()} جنيه` : `Confirm Order - ${total.toLocaleString()} LE`)
                       }
@@ -418,7 +418,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {(paymentMethod === 'vodafone_cash' || paymentMethod === 'instapay') && (lang === 'ar' ? 'برجاء إرسال صورة التحويل على واتساب' : 'Please send transfer proof via WhatsApp')}
                 </p>
               </div>
-              
+
               <div className="bg-black/40 border border-white/5 p-6 max-w-sm mx-auto">
                 <p className="text-[10px] font-mono text-zinc-600 uppercase mb-2">{lang === 'ar' ? 'رقم التتبع' : 'Tracking Number'}</p>
                 <p className="text-xl font-oswald text-white tracking-widest font-bold">{completedOrder?.trackingNumber || 'DRX-TRK-XXXXXX'}</p>
@@ -434,22 +434,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a 
+                <a
                   href={(() => {
-                    const orderItems = cart.map(item => 
+                    const orderItems = cart.map(item =>
                       `${item.quantity}x ${lang === 'ar' ? item.product.name_ar : item.product.name_en} (${item.product.price} LE)`
                     ).join('%0A');
                     const trackingNum = completedOrder?.trackingNumber || '';
                     const paymentLabel = paymentMethod === 'cod' ? (lang === 'ar' ? 'الدفع عند الاستلام' : 'Cash on Delivery')
                       : paymentMethod === 'vodafone_cash' ? 'Vodafone Cash'
-                      : paymentMethod === 'instapay' ? 'InstaPay'
-                      : 'Fawry';
+                        : paymentMethod === 'instapay' ? 'InstaPay'
+                          : 'Fawry';
                     const msg = lang === 'ar'
                       ? `مرحباً DRX! 🛒%0Aطلب جديد:%0A${orderItems}%0A%0Aالإجمالي: ${total.toLocaleString()} LE%0Aطريقة الدفع: ${paymentLabel}%0Aرقم التتبع: ${trackingNum}%0Aالاسم: ${encodeURIComponent(shipping.fullName)}%0Aالهاتف: ${shipping.phone}`
                       : `Hi DRX! 🛒%0ANew Order:%0A${orderItems}%0A%0ATotal: ${total.toLocaleString()} LE%0APayment: ${paymentLabel}%0ATracking: ${trackingNum}%0AName: ${encodeURIComponent(shipping.fullName)}%0APhone: ${shipping.phone}`;
                     return `https://wa.me/201012345678?text=${msg}`;
                   })()}
-                  target="_blank" 
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="bg-green-600 text-white px-8 py-4 font-bold uppercase tracking-widest text-xs hover:bg-green-500 transition-all inline-flex items-center justify-center gap-2"
                 >

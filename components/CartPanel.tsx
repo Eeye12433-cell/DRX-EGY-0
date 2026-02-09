@@ -1,13 +1,10 @@
 import React from 'react';
 import { CartItem } from '../types';
+import { useCart } from '@/hooks/useCart';
 
 interface CartPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  cart: CartItem[];
-  onRemove: (id: string) => void;
-  onUpdateQuantity: (id: string, delta: number) => void;
-  onClear: () => void;
   lang: 'ar' | 'en';
   onCheckout: () => void;
 }
@@ -15,13 +12,10 @@ interface CartPanelProps {
 const CartPanel: React.FC<CartPanelProps> = ({
   isOpen,
   onClose,
-  cart,
-  onRemove,
-  onUpdateQuantity,
-  onClear,
   lang,
   onCheckout,
 }) => {
+  const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
   if (!isOpen) return null;
 
   const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
@@ -79,7 +73,7 @@ const CartPanel: React.FC<CartPanelProps> = ({
                     </div>
 
                     <button
-                      onClick={() => onRemove(item.product.id)}
+                      onClick={() => removeFromCart(item.product.id)}
                       className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 hover:text-drxred transition-colors"
                     >
                       [ {lang === 'ar' ? 'حذف' : 'Remove'} ]
@@ -89,14 +83,14 @@ const CartPanel: React.FC<CartPanelProps> = ({
                   <div className="mt-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => onUpdateQuantity(item.product.id, -1)}
+                        onClick={() => updateQuantity(item.product.id, -1)}
                         className="w-8 h-8 border border-white/10 bg-black hover:border-drxred transition-colors text-white"
                       >
                         -
                       </button>
                       <div className="w-10 text-center font-mono text-xs">{item.quantity}</div>
                       <button
-                        onClick={() => onUpdateQuantity(item.product.id, 1)}
+                        onClick={() => updateQuantity(item.product.id, 1)}
                         className="w-8 h-8 border border-white/10 bg-black hover:border-drxred transition-colors text-white"
                       >
                         +
@@ -125,7 +119,7 @@ const CartPanel: React.FC<CartPanelProps> = ({
 
               <div className="flex gap-3">
                 <button
-                  onClick={onClear}
+                  onClick={clearCart}
                   className="flex-1 border border-white/10 bg-black text-zinc-400 py-4 font-mono text-[10px] uppercase tracking-widest hover:border-drxred hover:text-white transition-all"
                 >
                   {lang === 'ar' ? 'إفراغ السلة' : 'Clear Cart'}

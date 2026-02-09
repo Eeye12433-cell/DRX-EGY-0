@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import VerifyProductModal from '@/components/VerifyProductModal';
 import { useTranslation } from 'react-i18next';
 import { products } from '@/data/products';
 import { useCart } from '@/hooks/useCart';
@@ -17,7 +16,6 @@ const ProductDetailView = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string>();
   const [selectedFlavor, setSelectedFlavor] = useState<string>();
-  const [verifyOpen, setVerifyOpen] = useState(false);
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
 
@@ -83,11 +81,10 @@ const ProductDetailView = () => {
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className={`h-5 w-5 ${
-                    i < Math.floor(product.rating)
+                  className={`h-5 w-5 ${i < Math.floor(product.rating)
                       ? 'fill-primary text-primary'
                       : 'text-muted-foreground'
-                  }`}
+                    }`}
                 />
               ))}
             </div>
@@ -190,21 +187,7 @@ const ProductDetailView = () => {
             >
               {t('product.addToCart', { defaultValue: 'Add to cart' })}
             </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => setVerifyOpen(true)}
-              className="flex-1 text-xs sm:text-sm font-mono uppercase border-white/10"
-            >
-              {t('verification.button.label', { defaultValue: 'Verify Product' })}
-            </Button>
           </div>
-
-          <VerifyProductModal
-            productId={product.id}
-            open={verifyOpen}
-            onOpenChange={setVerifyOpen}
-          />
         </div>
       </div>
     </div>

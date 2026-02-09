@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import gsap from 'gsap';
-import { Product, CartItem, Order } from './types';
+import { Product, Order } from './types';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Home from './views/Home';
@@ -74,7 +74,6 @@ const App: React.FC = () => {
   const { products, setProducts, loading: productsLoading, refetch: refetchProducts } = useProducts();
   const { i18n } = useTranslation();
 
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -97,12 +96,9 @@ const App: React.FC = () => {
     if (savedTheme === 'dark' || savedTheme === 'light') setTheme(savedTheme);
     const savedLang = localStorage.getItem('drx-lang');
     if (savedLang === 'ar' || savedLang === 'en') setLang(savedLang);
-    const savedCart = localStorage.getItem('drx-cart');
-    if (savedCart) setCart(JSON.parse(savedCart));
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('drx-cart', JSON.stringify(cart));
     localStorage.setItem('drx-theme', theme);
     localStorage.setItem('drx-lang', lang);
     const root = document.documentElement;
@@ -110,31 +106,13 @@ const App: React.FC = () => {
     root.classList.add(theme);
     root.lang = lang;
     root.dir = lang === 'ar' ? 'rtl' : 'ltr';
-  }, [cart, theme, lang]);
+  }, [theme, lang]);
 
   useEffect(() => {
     gsap.fromTo('.page-content', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' });
   }, [location.pathname]);
 
-  const addToCart = (product: Product) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.product.id === product.id);
-      if (existing) return prev.map((item) => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-      return [...prev, { product, quantity: 1 }];
-    });
-    setIsCartOpen(true);
-  };
-
-  const removeFromCart = (productId: string) => setCart((prev) => prev.filter((item) => item.product.id !== productId));
-
-  const updateQuantity = (productId: string, delta: number) => {
-    setCart((prev) => prev.map((item) => item.product.id === productId ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item).filter((item) => item.quantity > 0));
-  };
-
-  const clearCart = () => window.confirm(lang === 'ar' ? 'هل تريد إفراغ السلة؟' : 'Clear entire cart?') && setCart([]);
-
   const handleOrderComplete = (newOrder: Order) => {
-    setCart([]);
     setIsCheckoutOpen(false);
     setIsCartOpen(false);
     navigate(`/track?id=${newOrder.trackingNumber}`);
@@ -155,7 +133,6 @@ const App: React.FC = () => {
           <Navbar
             onMenuClick={() => setIsSidebarOpen(true)}
             onCartClick={() => setIsCartOpen(true)}
-            cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
             lang={lang}
             setLang={setLang}
             theme={theme}
@@ -165,9 +142,9 @@ const App: React.FC = () => {
 
           <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} lang={lang} onNavigate={(path) => { navigate(path); setIsSidebarOpen(false); }} />
 
-          <CartPanel isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} onRemove={removeFromCart} onUpdateQuantity={updateQuantity} onClear={clearCart} lang={lang} onCheckout={() => setIsCheckoutOpen(true)} />
+          <CartPanel isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} lang={lang} onCheckout={() => setIsCheckoutOpen(true)} />
 
-          <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} cart={cart} lang={lang} onOrderComplete={handleOrderComplete} />
+          <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} lang={lang} onOrderComplete={handleOrderComplete} />
 
           <PerformanceCoach isOpen={isCoachOpen} onClose={() => setIsCoachOpen(false)} lang={lang} />
 

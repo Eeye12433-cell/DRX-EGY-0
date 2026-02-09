@@ -1,10 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Product } from '@/types/product';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star, MapPin } from 'lucide-react';
+import { Star, ShoppingCart } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useCart } from '@/hooks/useCart';
 
 interface ProductCardProps {
   product: Product;
@@ -12,13 +13,13 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
 
-  const handleLocateSalesRep = (e: React.MouseEvent) => {
+  const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate('/contact');
+    addToCart(product);
   };
 
   return (
@@ -54,17 +55,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
             {formatPrice(product.price)}
           </div>
         </CardContent>
-        <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+        <CardFooter className="p-4 pt-0">
           <Button
             className="w-full bg-white text-black hover:bg-drxred hover:text-white font-mono text-xs uppercase tracking-widest"
-            onClick={handleLocateSalesRep}
+            onClick={handleAddToCart}
           >
-            <MapPin className="h-4 w-4 mr-2" />
-            {t('productCard.locateSalesRep')}
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            {t('product.addToCart')}
           </Button>
-          <p className="text-[10px] text-muted-foreground text-center font-mono">
-            {t('productCard.distributorNote')}
-          </p>
         </CardFooter>
       </Card>
     </Link>

@@ -75,7 +75,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
     isNew: false,
     isBestSeller: false,
     featured: 1,
-    goals: []
+    goals: [],
+    sizes: [],
+    flavors: [],
+    rating: 5,
+    reviews: 0
   });
 
   // Code Management State
@@ -324,7 +328,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
         isNew: true,
         isBestSeller: false,
         featured: products.length + 1,
-        goals: []
+        goals: [],
+        sizes: [],
+        flavors: [],
+        rating: 5,
+        reviews: 0
       });
     }
     setAiEditPrompt('');
@@ -369,6 +377,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
       setIsCodeModalOpen(false);
     } catch (err) {
       console.error('Failed to save code:', err);
+    }
+  };
+
+  const handleBulkGenerate = async () => {
+    const countStr = window.prompt("How many codes to generate? (Max 50)");
+    if (!countStr) return;
+    const count = parseInt(countStr);
+    if (isNaN(count) || count <= 0) return;
+    const finalCount = Math.min(count, 50);
+
+    if (!window.confirm(`Generate ${finalCount} codes?`)) return;
+
+    try {
+      const headers = await getAuthHeaders();
+      if (!headers) return;
+
+      // Generate codes sequentially (or parallel if backend permits, safer sequentially here)
+      for (let i = 0; i < finalCount; i++) {
+        const codeId = `DRX-BULK-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`;
+        await supabase.functions.invoke('admin-codes', {
+          body: { action: 'create', codeId, used: false },
+          headers
+        });
+      }
+      await loadCodes();
+      alert(`Successfully generated ${finalCount} codes.`);
+    } catch (err) {
+      console.error('Bulk generation failed:', err);
+      alert('Bulk generation failed partially or completely.');
     }
   };
 
@@ -644,9 +681,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-3 text-[10px] font-mono font-bold uppercase tracking-mega whitespace-nowrap transition-all ${
-                  activeTab === tab ? 'bg-drxred text-white shadow-lg' : 'text-muted hover:text-drxred'
-                }`}
+                className={`px-6 py-3 text-[10px] font-mono font-bold uppercase tracking-mega whitespace-nowrap transition-all ${activeTab === tab ? 'bg-drxred text-white shadow-lg' : 'text-muted hover:text-drxred'
+                  }`}
               >
                 {tab}
               </button>
@@ -770,6 +806,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
             >
               + Generate Code
             </button>
+            <button
+              onClick={handleBulkGenerate}
+              className="bg-zinc-800 text-white px-10 py-4 text-[10px] font-black uppercase tracking-mega hover:bg-white hover:text-black border border-white/10 transition-all shadow-lg"
+            >
+              ++ Bulk Generate
+            </button>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -785,9 +827,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
                 <button
                   key={f}
                   onClick={() => setCodeFilter(f)}
-                  className={`px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-mega transition-all ${
-                    codeFilter === f ? 'bg-drxred text-white' : 'text-muted hover:text-drxred'
-                  }`}
+                  className={`px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-mega transition-all ${codeFilter === f ? 'bg-drxred text-white' : 'text-muted hover:text-drxred'
+                    }`}
                 >
                   {f}
                 </button>
@@ -1016,13 +1057,60 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
                           goals: goals.includes(g.id) ? goals.filter(x => x !== g.id) : [...goals, g.id]
                         }));
                       }}
-                      className={`px-3 py-1 text-[10px] font-mono uppercase tracking-mega border transition-all ${
-                        (formData.goals || []).includes(g.id) ? 'bg-drxred text-white border-drxred' : 'border-ui text-muted hover:border-drxred'
-                      }`}
+                      className={`px-3 py-1 text-[10px] font-mono uppercase tracking-mega border transition-all ${(formData.goals || []).includes(g.id) ? 'bg-drxred text-white border-drxred' : 'border-ui text-muted hover:border-drxred'
+                        }`}
                     >
                       {g.emoji} {g.label_en}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Sizes (comma separated)</label>
+                  <input
+                    type="text"
+                    className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={formData.sizes?.join(', ') || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, sizes: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))}
+                    placeholder="e.g. 1kg, 2kg, 5lbs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Flavors (comma separated)</label>
+                  <input
+                    type="text"
+                    className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={formData.flavors?.join(', ') || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, flavors: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))}
+                    placeholder="e.g. Chocolate, Vanilla"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Rating (0-5)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="5"
+                    className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={formData.rating || 5}
+                    onChange={e => setFormData(prev => ({ ...prev, rating: Number(e.target.value) }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-mono text-muted uppercase font-bold tracking-mega block">Reviews Count</label>
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-full bg-transparent border-b border-ui p-3 font-mono text-sm outline-none focus:border-drxred"
+                    value={formData.reviews || 0}
+                    onChange={e => setFormData(prev => ({ ...prev, reviews: Number(e.target.value) }))}
+                  />
                 </div>
               </div>
 

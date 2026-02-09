@@ -29,6 +29,10 @@ const mapDbProductToProduct = (row: any): Product => ({
   isBestSeller: row.is_best_seller,
   featured: row.featured || 0,
   goals: row.goals || [],
+  sizes: row.sizes || [],
+  flavors: row.flavors || [],
+  rating: Number(row.rating) || 5,
+  reviews: Number(row.reviews) || 0,
 });
 
 // Map Product to database insert/update format
@@ -45,6 +49,10 @@ const mapProductToDb = (product: Partial<Product>) => ({
   is_best_seller: product.isBestSeller,
   featured: product.featured,
   goals: product.goals,
+  sizes: product.sizes,
+  flavors: product.flavors,
+  rating: product.rating,
+  reviews: product.reviews,
   slug: `${product.name_en?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'product'}-${Date.now()}`,
 });
 
@@ -56,7 +64,7 @@ export function useProducts(): UseProductsReturn {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const { data, error: fetchError } = await supabase
         .from('products')
