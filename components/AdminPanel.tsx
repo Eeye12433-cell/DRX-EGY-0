@@ -480,24 +480,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ products, setProducts, lang, re
         slug: slugValue,
       };
 
-      // Use upsert to handle both virtual products (INITIAL_PRODUCTS) and DB products.
-      // We use 'slug' as the conflict constraint since virtual products have slug-like IDs.
-      const { data: upsertData, error: upsertError } = await supabase
-        .from('products')
-        .upsert([dbData], {
-          onConflict: 'slug',
-          ignoreDuplicates: false
-        })
-        .select()
-        .single();
+      if (editingKey) {
+        const q = supabase.from('products').update(dbData);
+        const { error } =
+          editingKeyType === 'id'
+            ? await q.eq('id', editingKey)
+            : await q.eq('slug', editingKey);
 
-      if (upsertError) {
-        console.error('Failed to save product:', upsertError);
-        alert(`Failed to save product: ${upsertError.message} (code: ${upsertError.code})`);
-        return;
+        if (error) {
+          console.error('Failed to update product:', error);
+          alert(`Failed to update product: ${error.message} (code: ${error.code})`);
+          return;
+        }
+        await refetchProducts();
+      } else {
+        const { error } = await supabase.from('products').insert([dbData]).select().single();
+        if (error) {
+          console.error('Failed to add product:', error);
+          alert(`Failed to add product: ${error.message} (code: ${error.code})`);
+          return;
+        }
+        await refetchProducts();
       }
-
-      await refetchProducts();
       setIsFormOpen(false);
     } catch (err) {
       console.error('Error saving product:', err);

@@ -73,34 +73,14 @@ export function useProducts(): UseProductsReturn {
 
       if (fetchError) {
         console.error('Failed to fetch products from database:', fetchError);
+        // Fallback to initial products if database fetch fails
         setProducts(INITIAL_PRODUCTS);
         setError('Using cached products - database unavailable');
+      } else if (data && data.length > 0) {
+        setProducts(data.map(mapDbProductToProduct));
       } else {
-        const dbProducts = (data || []).map(mapDbProductToProduct);
-
-        // Merge strategy: Start with INITIAL_PRODUCTS and override with DB products
-        // We use the 'id' (or slug if id is virtual) to match.
-        // For INITIAL_PRODUCTS, the 'id' is a string like 'whey-isolate'.
-        const mergedMap = new Map<string, Product>();
-
-        // 1. Load initial products
-        INITIAL_PRODUCTS.forEach(p => mergedMap.set(p.id, p));
-
-        // 2. Override with DB products
-        // Many older DB products might have slugs that match the INITIAL_PRODUCTS id.
-        dbProducts.forEach(p => {
-          // If the DB product has an ID that matches one in INITIAL_PRODUCTS, override it.
-          // In Supabase, 'id' is usually a UUID, but these initial ones are slugs.
-          // So we should check for both.
-          mergedMap.set(p.id, p);
-        });
-
-        const mergedList = Array.from(mergedMap.values());
-
-        // Sort by featured
-        mergedList.sort((a, b) => (a.featured || 99) - (b.featured || 99));
-
-        setProducts(mergedList);
+        // No products in database, use initial products
+        setProducts(INITIAL_PRODUCTS);
       }
     } catch (err) {
       console.error('Error fetching products:', err);
