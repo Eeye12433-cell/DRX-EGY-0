@@ -79,12 +79,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       const trackingToken = Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
       const trackingNumber = `DRX-TRK-${trackingToken.substring(0, 12).toUpperCase()}`;
 
+      // Compute hash of trackingNumber for secure guest lookup
+      const encoder = new TextEncoder();
+      const data = encoder.encode(trackingNumber);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const trackingHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
       const { data: { user } } = await supabase.auth.getUser();
 
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           tracking_number: trackingNumber,
+          guest_tracking_token_hash: trackingHash,
           total,
           status: 'Pending',
           shipping_full_name: shipping.fullName,
@@ -324,8 +332,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       type="button"
                       onClick={() => setPaymentMethod(method.id)}
                       className={`w-full p-4 border text-left transition-all flex items-start gap-4 ${paymentMethod === method.id
-                          ? 'bg-drxred/10 border-drxred'
-                          : 'bg-black border-white/10 hover:border-white/30'
+                        ? 'bg-drxred/10 border-drxred'
+                        : 'bg-black border-white/10 hover:border-white/30'
                         }`}
                     >
                       <span className="text-2xl">{method.icon}</span>

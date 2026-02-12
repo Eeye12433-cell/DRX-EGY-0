@@ -49,12 +49,15 @@ serve(async (req) => {
     });
 
     // Verify the token
-    const { data: claims, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !claims?.user) {
-      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Allow anonymous requests if the token matches the Anon Key
+    if (token !== supabaseAnonKey) {
+      const { data: claims, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !claims?.user) {
+        return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const { profile, lang } = await req.json();
