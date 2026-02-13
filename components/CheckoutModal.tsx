@@ -1,73 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CartItem, ShippingInfo, Order, OrderStatus } from '../types';
 import { validateShippingForm, ShippingFormData } from '../src/lib/validations';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
-import { loadStripe } from '@stripe/stripe-js';
-import {
-  Elements,
-  PaymentElement,
-  useStripe,
-  useElements
-} from '@stripe/react-stripe-js';
-import { getStripe } from '@/lib/stripe';
 
-// Helper component for the payment form inside Elements context
-const StripePaymentForm = ({
-  onSuccess,
-  amount,
-  loading,
-  setLoading
-}: {
-  onSuccess: () => void,
-  amount: number,
-  loading: boolean,
-  setLoading: (l: boolean) => void
-}) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [message, setMessage] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) return;
-
-    setLoading(true);
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: window.location.origin + '/#track', // This will need handling on return
-      },
-      redirect: "if_required", // Prevent redirect if not 3DS
-    });
-
-    if (error) {
-      setMessage(error.message || "Payment failed");
-      setLoading(false);
-    } else {
-      // Payment succeeded
-      onSuccess();
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in">
-      <PaymentElement />
-      {message && <div className="text-red-500 text-xs">{message}</div>}
-      <button
-        type="submit"
-        disabled={!stripe || !elements || loading}
-        className="w-full bg-drxred text-white py-4 font-black uppercase tracking-widest text-xs hover:bg-white hover:text-black transition-all disabled:opacity-50 mt-4"
-      >
-        {loading ? 'Processing...' : `Pay ${amount.toLocaleString()} LE`}
-      </button>
-    </form>
-  );
-};
-
-type PaymentMethod = 'cod' | 'vodafone_cash' | 'instapay' | 'fawry' | 'card';
+type PaymentMethod = 'cod' | 'vodafone_cash' | 'instapay' | 'fawry';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -85,7 +22,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const [shipping, setShipping] = useState<ShippingInfo>({
     fullName: '',
@@ -99,28 +35,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const subtotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const deliveryFee = shipping.method === 'delivery' ? 50 : 0;
   const total = subtotal + deliveryFee;
-
-  // Initialize Stripe Payment Intent when Card is selected
-  useEffect(() => {
-    if (paymentMethod === 'card' && step === 2 && !clientSecret) {
-      const createIntent = async () => {
-        try {
-          const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-            body: { amount: total, currency: 'EGP' }
-          });
-
-          if (error) throw error;
-          if (data?.clientSecret) {
-            setClientSecret(data.clientSecret);
-          }
-        } catch (err) {
-          console.error('Stripe setup error:', err);
-          alert('Could not initialize payment secure channel');
-        }
-      };
-      createIntent();
-    }
-  }, [paymentMethod, step, total, clientSecret]);
 
   const handleInputChange = (field: keyof ShippingInfo, value: string) => {
     setShipping(prev => ({ ...prev, [field]: value }));
@@ -155,7 +69,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  const finalizeOrder = async () => {
+  const processOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
     try {
       // Generate cryptographically secure tracking token
       const randomBytes = new Uint8Array(32);
@@ -163,7 +80,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       const trackingToken = Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('');
       const trackingNumber = `DRX-TRK-${trackingToken.substring(0, 12).toUpperCase()}`;
 
-      // Compute hash
+      // Compute hash of trackingNumber for secure guest lookup
       const encoder = new TextEncoder();
       const data = encoder.encode(trackingNumber);
       const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -178,7 +95,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           tracking_number: trackingNumber,
           guest_tracking_token_hash: trackingHash,
           total,
-          status: paymentMethod === 'card' ? 'Confirmed' : 'Pending', // Card orders are auto-confirmed
+          status: 'Pending',
           shipping_full_name: shipping.fullName,
           shipping_phone: shipping.phone,
           shipping_email: shipping.email || null,
@@ -211,7 +128,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         items: [...cart],
         total,
         shippingInfo: shipping,
-        status: paymentMethod === 'card' ? OrderStatus.Confirmed : OrderStatus.Pending,
+        status: OrderStatus.Pending,
         createdAt: new Date().toISOString()
       };
 
@@ -227,24 +144,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
 
-  const processOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    // If NOT card, finalize immediately. If Card, it's handled by StripePaymentForm
-    if (paymentMethod !== 'card') {
-      finalizeOrder();
-    }
-  };
-
   if (!isOpen) return null;
 
   const paymentMethods = [
-    {
-      id: 'card' as PaymentMethod,
-      name: lang === 'ar' ? 'بطاقة بنكية / Apple Pay' : 'Card / Apple Pay',
-      icon: '💳',
-      desc: lang === 'ar' ? 'دفع آمن عبر Stripe' : 'Secure payment via Stripe'
-    },
     {
       id: 'cod' as PaymentMethod,
       name: lang === 'ar' ? 'الدفع عند الاستلام' : 'Cash on Delivery',
@@ -428,7 +330,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       type="button"
                       onClick={() => {
                         setPaymentMethod(method.id);
-                        setClientSecret(null); // Reset Stripe if method changes
                       }}
                       className={`w-full p-4 border text-left transition-all flex items-start gap-4 ${paymentMethod === method.id
                         ? 'bg-drxred/10 border-drxred'
@@ -451,74 +352,58 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               </div>
 
-              {/* Payment Instructions / Forms */}
-              <div className="animate-in fade-in duration-300">
-                {paymentMethod === 'card' && clientSecret && (
-                  <div className="bg-black/40 border border-white/10 p-4 rounded-sm mt-4">
-                    <Elements stripe={getStripe()} options={{ clientSecret, appearance: { theme: 'night' } }}>
-                      <StripePaymentForm
-                        onSuccess={finalizeOrder}
-                        amount={total}
-                        loading={loading}
-                        setLoading={setLoading}
-                      />
-                    </Elements>
-                  </div>
-                )}
-
-                {paymentMethod !== 'card' && paymentMethod !== 'cod' && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-sm mt-4">
-                    <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest mb-2">
-                      {lang === 'ar' ? '⚠️ تعليمات الدفع' : '⚠️ Payment Instructions'}
-                    </p>
-                    <p className="text-zinc-400 text-sm">
-                      {paymentMethod === 'vodafone_cash' && (
-                        lang === 'ar'
-                          ? 'قم بتحويل المبلغ الإجمالي على رقم فودافون كاش: 01012345678 ثم أرسل صورة التحويل على واتساب'
-                          : 'Transfer the total amount to Vodafone Cash: 01012345678, then send the transfer screenshot via WhatsApp'
-                      )}
-                      {paymentMethod === 'instapay' && (
-                        lang === 'ar'
-                          ? 'قم بالتحويل على حساب انستاباي: drx.egypt@instapay ثم أرسل صورة التحويل على واتساب'
-                          : 'Transfer to InstaPay account: drx.egypt@instapay, then send the transfer screenshot via WhatsApp'
-                      )}
-                      {paymentMethod === 'fawry' && (
-                        lang === 'ar'
-                          ? 'ستحصل على كود دفع فوري بعد تأكيد الطلب. اذهب لأي فرع فوري واستخدم الكود للدفع خلال 48 ساعة.'
-                          : 'You will receive a Fawry payment code after order confirmation. Visit any Fawry branch and use the payment code.'
-                      )}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {paymentMethod !== 'card' && (
-                <form onSubmit={processOrder} className="space-y-4 pt-4">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-drxred text-white py-5 font-black uppercase tracking-[0.2em] text-sm hover:bg-white hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-3">
-                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        {lang === 'ar' ? 'جاري التأكيد...' : 'Processing...'}
-                      </span>
-                    ) : (
-                      <>
-                        {paymentMethod === 'cod'
-                          ? (lang === 'ar' ? `تأكيد الطلب - الدفع عند الاستلام` : `Confirm Order - Pay on Delivery`)
-                          : (lang === 'ar' ? `تأكيد الطلب - ${total.toLocaleString()} جنيه` : `Confirm Order - ${total.toLocaleString()} LE`)
-                        }
-                      </>
-                    )}
-                  </button>
-
-                  <p className="text-[9px] font-mono text-zinc-600 text-center uppercase tracking-widest flex items-center justify-center gap-2">
-                    <span>🔒</span> {lang === 'ar' ? 'بياناتك محمية ومشفرة' : 'Your data is secure & encrypted'}
+              {/* Payment Instructions */}
+              {paymentMethod !== 'cod' && (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-sm animate-in fade-in duration-300">
+                  <p className="text-yellow-500 text-xs font-mono uppercase tracking-widest mb-2">
+                    {lang === 'ar' ? '⚠️ تعليمات الدفع' : '⚠️ Payment Instructions'}
                   </p>
-                </form>
+                  <p className="text-zinc-400 text-sm">
+                    {paymentMethod === 'vodafone_cash' && (
+                      lang === 'ar'
+                        ? 'قم بتحويل المبلغ الإجمالي على رقم فودافون كاش: 01012345678 ثم أرسل صورة التحويل على واتساب'
+                        : 'Transfer the total amount to Vodafone Cash: 01012345678, then send the transfer screenshot via WhatsApp'
+                    )}
+                    {paymentMethod === 'instapay' && (
+                      lang === 'ar'
+                        ? 'قم بالتحويل على حساب انستاباي: drx.egypt@instapay ثم أرسل صورة التحويل على واتساب'
+                        : 'Transfer to InstaPay account: drx.egypt@instapay, then send the transfer screenshot via WhatsApp'
+                    )}
+                    {paymentMethod === 'fawry' && (
+                      lang === 'ar'
+                        ? 'ستحصل على كود دفع فوري بعد تأكيد الطلب. اذهب لأي فرع فوري واستخدم الكود للدفع خلال 48 ساعة.'
+                        : 'You will receive a Fawry payment code after order confirmation. Visit any Fawry branch and use the payment code.'
+                    )}
+                  </p>
+                </div>
               )}
+
+              {/* Confirm Order */}
+              <form onSubmit={processOrder} className="space-y-4 pt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-drxred text-white py-5 font-black uppercase tracking-[0.2em] text-sm hover:bg-white hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-3">
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      {lang === 'ar' ? 'جاري التأكيد...' : 'Processing...'}
+                    </span>
+                  ) : (
+                    <>
+                      {paymentMethod === 'cod'
+                        ? (lang === 'ar' ? `تأكيد الطلب - الدفع عند الاستلام` : `Confirm Order - Pay on Delivery`)
+                        : (lang === 'ar' ? `تأكيد الطلب - ${total.toLocaleString()} جنيه` : `Confirm Order - ${total.toLocaleString()} LE`)
+                      }
+                    </>
+                  )}
+                </button>
+
+                <p className="text-[9px] font-mono text-zinc-600 text-center uppercase tracking-widest flex items-center justify-center gap-2">
+                  <span>🔒</span> {lang === 'ar' ? 'بياناتك محمية ومشفرة' : 'Your data is secure & encrypted'}
+                </p>
+              </form>
 
               <button type="button" onClick={() => setStep(1)} className="w-full text-[10px] font-mono text-zinc-600 uppercase hover:text-zinc-300">
                 {lang === 'ar' ? '← العودة للشحن' : '← Back to Shipping'}
@@ -538,7 +423,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
                   {paymentMethod === 'cod' && (lang === 'ar' ? 'سيتم التواصل معك لتأكيد الطلب' : 'We will contact you to confirm')}
                   {paymentMethod === 'fawry' && (lang === 'ar' ? 'اذهب لأي فرع فوري واستخدم كود الدفع' : 'Visit any Fawry branch and use the payment code')}
-                  {paymentMethod === 'card' && (lang === 'ar' ? 'تم استلام دفعتك بنجاح' : 'Payment received successfully')}
                   {(paymentMethod === 'vodafone_cash' || paymentMethod === 'instapay') && (lang === 'ar' ? 'برجاء إرسال صورة التحويل على واتساب' : 'Please send transfer proof via WhatsApp')}
                 </p>
               </div>
@@ -567,8 +451,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     const paymentLabel = paymentMethod === 'cod' ? (lang === 'ar' ? 'الدفع عند الاستلام' : 'Cash on Delivery')
                       : paymentMethod === 'vodafone_cash' ? 'Vodafone Cash'
                         : paymentMethod === 'instapay' ? 'InstaPay'
-                          : paymentMethod === 'card' ? 'Card / Apple Pay'
-                            : 'Fawry';
+                          : 'Fawry';
                     const msg = lang === 'ar'
                       ? `مرحباً DRX! 🛒%0Aطلب جديد:%0A${orderItems}%0A%0Aالإجمالي: ${total.toLocaleString()} LE%0Aطريقة الدفع: ${paymentLabel}%0Aرقم التتبع: ${trackingNum}%0Aالاسم: ${encodeURIComponent(shipping.fullName)}%0Aالهاتف: ${shipping.phone}`
                       : `Hi DRX! 🛒%0ANew Order:%0A${orderItems}%0A%0ATotal: ${total.toLocaleString()} LE%0APayment: ${paymentLabel}%0ATracking: ${trackingNum}%0AName: ${encodeURIComponent(shipping.fullName)}%0APhone: ${shipping.phone}`;
