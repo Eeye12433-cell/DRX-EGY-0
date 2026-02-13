@@ -43,26 +43,67 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    
+    const supabaseServiceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
 
     // Verify the token
-    // Allow anonymous requests if the token matches the Anon Key
-    if (token !== supabaseAnonKey) {
-      const { data: claims, error: authError } = await supabase.auth.getUser(token);
-      if (authError || !claims?.user) {
+    const isAnon = token === supabaseAnonKey;
+    let userId: string | null = null;
+
+    if (!isAnon) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) {
         return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      userId = user.id;
+    } else {
+      // Rate limit anonymous requests (Guests)
+      // Limit: 3 requests per 24 hours per IP
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 'anonymous';
+      const adminClient = createClient(supabaseUrl, supabaseServiceRole);
+
+      const { data: usage } = await adminClient
+        .from('guest_ai_usage')
+        .select('*')
+        .eq('ip', ip)
+        .maybeSingle();
+
+      const now = new Date();
+      if (usage) {
+        const lastRequest = new Date(usage.last_request_at);
+        const hoursSinceLast = (now.getTime() - lastRequest.getTime()) / (1000 * 60 * 60);
+
+        if (hoursSinceLast < 24 && usage.request_count >= 3) {
+          return new Response(JSON.stringify({
+            error: 'Guest limit exceeded. Please sign in for unlimited advice.'
+          }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // Reset count if it's been more than 24 hours
+        const newCount = hoursSinceLast >= 24 ? 1 : usage.request_count + 1;
+        await adminClient
+          .from('guest_ai_usage')
+          .update({ request_count: newCount, last_request_at: now.toISOString() })
+          .eq('ip', ip);
+      } else {
+        await adminClient
+          .from('guest_ai_usage')
+          .insert({ ip, request_count: 1, last_request_at: now.toISOString() });
+      }
     }
 
     const { profile, lang } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
@@ -154,7 +195,7 @@ Return JSON with this exact structure:
 
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    
+
     if (toolCall?.function?.arguments) {
       const result = JSON.parse(toolCall.function.arguments);
       return new Response(JSON.stringify(result), {
@@ -165,8 +206,8 @@ Return JSON with this exact structure:
     throw new Error("Unexpected response format");
   } catch (error) {
     console.error("Nutrition advice error:", error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : "Unknown error" 
+    return new Response(JSON.stringify({
+      error: error instanceof Error ? error.message : "Unknown error"
     }), {
       status: 500,
       headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
