@@ -171,7 +171,7 @@ const PolicyView: React.FC<{ lang: 'ar' | 'en'; type: string }> = ({ lang, type 
 };
 
 const App: React.FC = () => {
-  const { products, setProducts, loading: productsLoading, refetch: refetchProducts } = useProducts();
+  const { products, setProducts, loading: productsLoading, refetch: refetchProducts, addProduct, updateProduct, deleteProduct } = useProducts();
   const { i18n } = useTranslation();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -266,7 +266,15 @@ const App: React.FC = () => {
                 <Route path="/verify" element={<VerifyView lang={lang} />} />
                 <Route path="/track" element={<TrackOrderView lang={lang} />} />
                 <Route path="/contact" element={<ContactView lang={lang} />} />
-                <Route path="/admin" element={<AdminPanel lang={lang} products={products} setProducts={setProducts} refetchProducts={refetchProducts} />} />
+                <Route path="/admin" element={<AdminPanel
+                  lang={lang}
+                  products={products}
+                  setProducts={setProducts}
+                  refetchProducts={refetchProducts}
+                  addProduct={addProduct}
+                  updateProduct={updateProduct}
+                  deleteProduct={deleteProduct}
+                />} />
                 <Route path="/policies/:type" element={<PolicyView lang={lang} type={location.pathname.split('/').pop() || ''} />} />
               </Routes>
             </div>
