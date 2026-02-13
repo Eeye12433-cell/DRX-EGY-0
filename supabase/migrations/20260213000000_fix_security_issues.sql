@@ -38,9 +38,13 @@ CREATE POLICY "Admins can view all profiles" ON "public"."profiles"
 AS PERMISSIVE FOR SELECT
 TO authenticated
 USING (
-  ((auth.jwt() ->> 'role'::text) = 'service_role'::text)
+  (auth.jwt() ->> 'role' = 'service_role')
   OR 
-  (auth.uid() IN ( SELECT id FROM profiles WHERE is_admin = true ))
+  EXISTS (
+    SELECT 1 FROM public.user_roles 
+    WHERE user_id = auth.uid() 
+    AND role = 'admin'
+  )
 );
 
 -- 3. Secure Order Items
