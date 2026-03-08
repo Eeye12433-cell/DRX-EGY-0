@@ -14,10 +14,28 @@ export interface Review {
   date: string;
 }
 
-export { type Product } from '@/src/types/product';
-// Re-export for backward compat - but components should import from @/types/product
-import type { Product } from '@/src/types/product';
-export type { Product as ProductType };
+export interface Product {
+  id: string;
+  name: string;
+  name_ar: string;
+  name_en: string;
+  description: string;
+  description_ar: string;
+  description_en: string;
+  price: number;
+  image: string;
+  imageUrl?: string;
+  category: string;
+  rating: number;
+  reviews: number;
+  inStock: boolean;
+  isNew?: boolean;
+  isBestSeller?: boolean;
+  featured?: number;
+  goals?: string[];
+  sizes?: string[];
+  flavors?: string[];
+}
 
 export interface CartItem {
   product: Product;
