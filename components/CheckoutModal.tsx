@@ -170,6 +170,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       name: 'Fawry',
       icon: '🟡',
       desc: lang === 'ar' ? 'ادفع نقداً في أي فرع فوري بالكود' : 'Pay cash at any Fawry branch with code'
+    },
+    {
+      id: 'apple_pay' as PaymentMethod,
+      name: 'Apple Pay',
+      icon: '',
+      desc: lang === 'ar' ? 'ادفع باستخدام Apple Pay - حوّل المبلغ ثم أرسل الإيصال' : 'Pay via Apple Pay - transfer & send receipt'
+    },
+    {
+      id: 'paypal' as PaymentMethod,
+      name: 'PayPal',
+      icon: '🅿️',
+      desc: lang === 'ar' ? 'حوّل المبلغ على حساب PayPal ثم أرسل الإيصال' : 'Transfer to our PayPal account & send receipt'
     }
   ];
 
