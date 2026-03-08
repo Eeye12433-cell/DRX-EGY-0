@@ -17,8 +17,10 @@ interface UseProductsReturn {
 // Map database row to Product type
 const mapDbProductToProduct = (row: any): Product => ({
   id: row.id,
+  name: row.name_en || row.name_ar || '',
   name_ar: row.name_ar,
   name_en: row.name_en,
+  description: row.description_en || row.description_ar || '',
   description_ar: row.description_ar || '',
   description_en: row.description_en || '',
   price: Number(row.price),
