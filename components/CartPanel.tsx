@@ -45,13 +45,9 @@ const CartPanel: React.FC<CartPanelProps> = ({
             cart.map((item) => (
               <div key={item.product.id} className="flex gap-4 border border-white/10 p-4 bg-black/20">
                 <img
-                  src={item.product.imageUrl || item.product.image}
+                  src={item.product.image}
                   className="w-16 h-16 object-cover border border-white/5"
                   alt=""
-                  onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement;
-                    if (img.src !== item.product.image) img.src = item.product.image;
-                  }}
                 />
 
                 <div className="flex-1">

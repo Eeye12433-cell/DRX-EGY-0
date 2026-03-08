@@ -111,7 +111,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       const orderItems = cart.map(item => ({
         order_id: order.id,
         product_id: item.product.id.startsWith('prod-') ? null : item.product.id,
-        product_name: item.product.name_en,
+        product_name: item.product.name_en || item.product.name || 'Unknown',
         product_price: item.product.price,
         quantity: item.quantity
       }));

@@ -14,36 +14,10 @@ export interface Review {
   date: string;
 }
 
-export interface Product {
-  id: string;
-  name_ar: string;
-  name_en: string;
-  description_ar: string;
-  description_en: string;
-  price: number;
-
-  /**
-   * Existing image field (usually base64/data url from AI or stored value)
-   */
-  image: string;
-
-  /**
-   * ✅ NEW: Optional external image URL (CDN/Direct link).
-   * If set, UI can prefer this over `image`.
-   */
-  imageUrl?: string;
-
-  category: Category;
-  inStock: boolean;
-  isNew: boolean;
-  isBestSeller: boolean;
-  featured: number;
-  goals: string[];
-  sizes?: string[];
-  flavors?: string[];
-  rating?: number;
-  reviews?: number; // count
-}
+export { type Product } from '@/src/types/product';
+// Re-export for backward compat - but components should import from @/types/product
+import type { Product } from '@/src/types/product';
+export type { Product as ProductType };
 
 export interface CartItem {
   product: Product;
