@@ -445,7 +445,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
                   {paymentMethod === 'cod' && (lang === 'ar' ? 'سيتم التواصل معك لتأكيد الطلب' : 'We will contact you to confirm')}
                   {paymentMethod === 'fawry' && (lang === 'ar' ? 'اذهب لأي فرع فوري واستخدم كود الدفع' : 'Visit any Fawry branch and use the payment code')}
-                  {(paymentMethod === 'vodafone_cash' || paymentMethod === 'instapay') && (lang === 'ar' ? 'برجاء إرسال صورة التحويل على واتساب' : 'Please send transfer proof via WhatsApp')}
+                  {(paymentMethod === 'vodafone_cash' || paymentMethod === 'instapay' || paymentMethod === 'apple_pay' || paymentMethod === 'paypal') && (lang === 'ar' ? 'برجاء إرسال صورة التحويل على واتساب' : 'Please send transfer proof via WhatsApp')}
                 </p>
               </div>
 
