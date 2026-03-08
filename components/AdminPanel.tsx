@@ -503,8 +503,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     e.preventDefault();
     try {
       const payload: Omit<Product, 'id'> = {
+        name: formData.name_en || formData.name_ar || '',
         name_ar: formData.name_ar || '',
         name_en: formData.name_en || '',
+        description: formData.description_en || formData.description_ar || '',
         description_ar: formData.description_ar || '',
         description_en: formData.description_en || '',
         price: formData.price || 0,

@@ -135,6 +135,7 @@ export type Database = {
           description_ar: string | null
           description_en: string | null
           featured: number | null
+          flavors: string[] | null
           goals: string[] | null
           id: string
           image: string | null
@@ -144,6 +145,9 @@ export type Database = {
           name_ar: string
           name_en: string
           price: number
+          rating: number | null
+          reviews: number | null
+          sizes: string[] | null
           slug: string
           updated_at: string
         }
@@ -153,6 +157,7 @@ export type Database = {
           description_ar?: string | null
           description_en?: string | null
           featured?: number | null
+          flavors?: string[] | null
           goals?: string[] | null
           id?: string
           image?: string | null
@@ -162,6 +167,9 @@ export type Database = {
           name_ar: string
           name_en: string
           price: number
+          rating?: number | null
+          reviews?: number | null
+          sizes?: string[] | null
           slug: string
           updated_at?: string
         }
@@ -171,6 +179,7 @@ export type Database = {
           description_ar?: string | null
           description_en?: string | null
           featured?: number | null
+          flavors?: string[] | null
           goals?: string[] | null
           id?: string
           image?: string | null
@@ -180,6 +189,9 @@ export type Database = {
           name_ar?: string
           name_en?: string
           price?: number
+          rating?: number | null
+          reviews?: number | null
+          sizes?: string[] | null
           slug?: string
           updated_at?: string
         }
@@ -333,41 +345,7 @@ export type Database = {
       }
     }
     Views: {
-      public_reviews: {
-        Row: {
-          comment: string | null
-          created_at: string | null
-          id: string | null
-          product_id: string | null
-          rating: number | null
-          user_name: string | null
-        }
-        Insert: {
-          comment?: string | null
-          created_at?: string | null
-          id?: string | null
-          product_id?: string | null
-          rating?: number | null
-          user_name?: string | null
-        }
-        Update: {
-          comment?: string | null
-          created_at?: string | null
-          id?: string | null
-          product_id?: string | null
-          rating?: number | null
-          user_name?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "reviews_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       cleanup_old_verify_attempts: { Args: never; Returns: undefined }

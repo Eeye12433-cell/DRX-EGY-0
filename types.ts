@@ -16,33 +16,25 @@ export interface Review {
 
 export interface Product {
   id: string;
+  name: string;
   name_ar: string;
   name_en: string;
+  description: string;
   description_ar: string;
   description_en: string;
   price: number;
-
-  /**
-   * Existing image field (usually base64/data url from AI or stored value)
-   */
   image: string;
-
-  /**
-   * ✅ NEW: Optional external image URL (CDN/Direct link).
-   * If set, UI can prefer this over `image`.
-   */
   imageUrl?: string;
-
-  category: Category;
+  category: string;
+  rating: number;
+  reviews: number;
   inStock: boolean;
-  isNew: boolean;
-  isBestSeller: boolean;
-  featured: number;
-  goals: string[];
+  isNew?: boolean;
+  isBestSeller?: boolean;
+  featured?: number;
+  goals?: string[];
   sizes?: string[];
   flavors?: string[];
-  rating?: number;
-  reviews?: number; // count
 }
 
 export interface CartItem {

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Product } from '../../types';
+import { Product } from '@/types/product';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Star, ShoppingCart } from 'lucide-react';
