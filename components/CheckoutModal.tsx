@@ -386,6 +386,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         ? 'ستحصل على كود دفع فوري بعد تأكيد الطلب. اذهب لأي فرع فوري واستخدم الكود للدفع خلال 48 ساعة.'
                         : 'You will receive a Fawry payment code after order confirmation. Visit any Fawry branch and use the payment code.'
                     )}
+                    {paymentMethod === 'apple_pay' && (
+                      lang === 'ar'
+                        ? 'قم بتحويل المبلغ عبر Apple Pay على الرقم: 01012345678 ثم أرسل صورة الإيصال على واتساب'
+                        : 'Transfer the amount via Apple Pay to: 01012345678, then send the receipt screenshot via WhatsApp'
+                    )}
+                    {paymentMethod === 'paypal' && (
+                      lang === 'ar'
+                        ? 'قم بتحويل المبلغ على حساب PayPal: payments@drxegypt.com ثم أرسل صورة التحويل على واتساب'
+                        : 'Transfer to PayPal: payments@drxegypt.com, then send the transfer screenshot via WhatsApp'
+                    )}
                   </p>
                 </div>
               )}
