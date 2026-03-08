@@ -473,7 +473,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     const paymentLabel = paymentMethod === 'cod' ? (lang === 'ar' ? 'الدفع عند الاستلام' : 'Cash on Delivery')
                       : paymentMethod === 'vodafone_cash' ? 'Vodafone Cash'
                         : paymentMethod === 'instapay' ? 'InstaPay'
-                          : 'Fawry';
+                          : paymentMethod === 'apple_pay' ? 'Apple Pay'
+                            : paymentMethod === 'paypal' ? 'PayPal'
+                              : 'Fawry';
                     const msg = lang === 'ar'
                       ? `مرحباً DRX! 🛒%0Aطلب جديد:%0A${orderItems}%0A%0Aالإجمالي: ${total.toLocaleString()} LE%0Aطريقة الدفع: ${paymentLabel}%0Aرقم التتبع: ${trackingNum}%0Aالاسم: ${encodeURIComponent(shipping.fullName)}%0Aالهاتف: ${shipping.phone}`
                       : `Hi DRX! 🛒%0ANew Order:%0A${orderItems}%0A%0ATotal: ${total.toLocaleString()} LE%0APayment: ${paymentLabel}%0ATracking: ${trackingNum}%0AName: ${encodeURIComponent(shipping.fullName)}%0APhone: ${shipping.phone}`;
