@@ -4,7 +4,7 @@ import { validateShippingForm, ShippingFormData } from '../src/lib/validations';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
 
-type PaymentMethod = 'cod' | 'vodafone_cash' | 'instapay' | 'fawry';
+type PaymentMethod = 'cod' | 'vodafone_cash' | 'instapay' | 'fawry' | 'apple_pay' | 'paypal';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -170,6 +170,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       name: 'Fawry',
       icon: '🟡',
       desc: lang === 'ar' ? 'ادفع نقداً في أي فرع فوري بالكود' : 'Pay cash at any Fawry branch with code'
+    },
+    {
+      id: 'apple_pay' as PaymentMethod,
+      name: 'Apple Pay',
+      icon: '',
+      desc: lang === 'ar' ? 'ادفع باستخدام Apple Pay - حوّل المبلغ ثم أرسل الإيصال' : 'Pay via Apple Pay - transfer & send receipt'
+    },
+    {
+      id: 'paypal' as PaymentMethod,
+      name: 'PayPal',
+      icon: '🅿️',
+      desc: lang === 'ar' ? 'حوّل المبلغ على حساب PayPal ثم أرسل الإيصال' : 'Transfer to our PayPal account & send receipt'
     }
   ];
 
@@ -374,6 +386,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         ? 'ستحصل على كود دفع فوري بعد تأكيد الطلب. اذهب لأي فرع فوري واستخدم الكود للدفع خلال 48 ساعة.'
                         : 'You will receive a Fawry payment code after order confirmation. Visit any Fawry branch and use the payment code.'
                     )}
+                    {paymentMethod === 'apple_pay' && (
+                      lang === 'ar'
+                        ? 'قم بتحويل المبلغ عبر Apple Pay على الرقم: 01012345678 ثم أرسل صورة الإيصال على واتساب'
+                        : 'Transfer the amount via Apple Pay to: 01012345678, then send the receipt screenshot via WhatsApp'
+                    )}
+                    {paymentMethod === 'paypal' && (
+                      lang === 'ar'
+                        ? 'قم بتحويل المبلغ على حساب PayPal: payments@drxegypt.com ثم أرسل صورة التحويل على واتساب'
+                        : 'Transfer to PayPal: payments@drxegypt.com, then send the transfer screenshot via WhatsApp'
+                    )}
                   </p>
                 </div>
               )}
@@ -423,7 +445,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
                   {paymentMethod === 'cod' && (lang === 'ar' ? 'سيتم التواصل معك لتأكيد الطلب' : 'We will contact you to confirm')}
                   {paymentMethod === 'fawry' && (lang === 'ar' ? 'اذهب لأي فرع فوري واستخدم كود الدفع' : 'Visit any Fawry branch and use the payment code')}
-                  {(paymentMethod === 'vodafone_cash' || paymentMethod === 'instapay') && (lang === 'ar' ? 'برجاء إرسال صورة التحويل على واتساب' : 'Please send transfer proof via WhatsApp')}
+                  {(paymentMethod === 'vodafone_cash' || paymentMethod === 'instapay' || paymentMethod === 'apple_pay' || paymentMethod === 'paypal') && (lang === 'ar' ? 'برجاء إرسال صورة التحويل على واتساب' : 'Please send transfer proof via WhatsApp')}
                 </p>
               </div>
 
@@ -451,7 +473,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     const paymentLabel = paymentMethod === 'cod' ? (lang === 'ar' ? 'الدفع عند الاستلام' : 'Cash on Delivery')
                       : paymentMethod === 'vodafone_cash' ? 'Vodafone Cash'
                         : paymentMethod === 'instapay' ? 'InstaPay'
-                          : 'Fawry';
+                          : paymentMethod === 'apple_pay' ? 'Apple Pay'
+                            : paymentMethod === 'paypal' ? 'PayPal'
+                              : 'Fawry';
                     const msg = lang === 'ar'
                       ? `مرحباً DRX! 🛒%0Aطلب جديد:%0A${orderItems}%0A%0Aالإجمالي: ${total.toLocaleString()} LE%0Aطريقة الدفع: ${paymentLabel}%0Aرقم التتبع: ${trackingNum}%0Aالاسم: ${encodeURIComponent(shipping.fullName)}%0Aالهاتف: ${shipping.phone}`
                       : `Hi DRX! 🛒%0ANew Order:%0A${orderItems}%0A%0ATotal: ${total.toLocaleString()} LE%0APayment: ${paymentLabel}%0ATracking: ${trackingNum}%0AName: ${encodeURIComponent(shipping.fullName)}%0APhone: ${shipping.phone}`;
