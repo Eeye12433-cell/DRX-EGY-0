@@ -4,7 +4,7 @@ import { validateShippingForm, ShippingFormData } from '../src/lib/validations';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
 
-type PaymentMethod = 'cod' | 'vodafone_cash' | 'instapay' | 'fawry';
+type PaymentMethod = 'cod' | 'vodafone_cash' | 'instapay' | 'fawry' | 'apple_pay' | 'paypal';
 
 interface CheckoutModalProps {
   isOpen: boolean;
