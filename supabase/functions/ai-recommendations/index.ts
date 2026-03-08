@@ -32,7 +32,30 @@ serve(async (req) => {
   try {
     // AI recommendations are public - no auth required
     // This feature helps all users discover products based on browsing behavior
-    const { cartInfo, viewHistory, purchaseHistory, productList } = await req.json();
+    const body = await req.json();
+
+    // --- Input Validation ---
+    const sanitize = (str: string, maxLen: number) =>
+      typeof str === 'string' ? str.substring(0, maxLen).replace(/[<>"'`]/g, '') : '';
+
+    const cartInfo = sanitize(body.cartInfo, 500);
+    const viewHistory = sanitize(body.viewHistory, 500);
+    const purchaseHistory = sanitize(body.purchaseHistory, 500);
+
+    if (!Array.isArray(body.productList)) {
+      return new Response(JSON.stringify([]), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Limit product list size to prevent payload abuse
+    const productList = body.productList.slice(0, 100).map((p: any) => ({
+      id: sanitize(String(p.id ?? ''), 50),
+      name: sanitize(String(p.name ?? ''), 100),
+      cat: sanitize(String(p.cat ?? ''), 50),
+      goals: Array.isArray(p.goals) ? p.goals.slice(0, 10).map((g: any) => sanitize(String(g), 50)) : [],
+    }));
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
